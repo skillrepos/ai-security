@@ -1,0 +1,9 @@
+requests==2.31.0
+pydantic==2.9.2
+# RAG deps
+chromadb==0.5.5
+sentence-transformers==3.0.1
+# MCP (FastMCP + MCP client)
+fastmcp==2.10.6
+mcp==1.3.0
+httpx==0.27.2
