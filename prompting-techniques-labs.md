@@ -500,74 +500,76 @@ Ask your first question now. After I answer, ask the next one. After 4-5 questio
 
 ### Steps
 
-**Step 1 — Baseline decision analysis.** Paste this straightforward prompt:
+**Step 1 — Baseline decision analysis.** Paste:
 
 ```
-Task: Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
+Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
 
 Options: PostgreSQL, MongoDB, DynamoDB
 
 Which should we choose and why?
 ```
 
-Read the response and note:
-- Does it acknowledge trade-offs, or just advocate for one option?
-- Does it mention any uncertainty or risks?
-- Does it consider what might change in the future?
+Before reading the response, predict: Will the AI acknowledge uncertainty and trade-offs, or just advocate for one option?
 
-**Step 2 — Add multi-round self-critique.** Use the exact same task and context, but change the analysis structure:
+Now read it. Note whether it mentions any risks with its recommended choice.
+
+**Step 2 — Add self-critique.** In the same conversation, ask:
 
 ```
-Task: Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
+Now redo this analysis in 3 rounds:
 
-Options: PostgreSQL, MongoDB, DynamoDB
+Round 1 - Initial assessment: Rate each option from 1-10 for fit, with a one-sentence justification.
 
-Provide your analysis in 3 rounds:
+Round 2 - Devil's advocate: For your top-rated option, list the 3 strongest arguments AGAINST choosing it. Then re-rate all options.
 
-Round 1 - Initial assessment: Rate each option from 1-10 for fit, with a one-sentence justification for each.
-
-Round 2 - Devil's advocate: For your top-rated option, list the 3 strongest arguments AGAINST choosing it. Re-rate all options after considering these counter-arguments.
-
-Round 3 - Final recommendation: State your recommended choice with a confidence level (0-100%). Explain what would need to be true for your second-choice option to become the better pick.
+Round 3 - Final recommendation: State your choice with a confidence level (0-100%). Explain what would need to be true for your second-choice option to become the better pick.
 ```
 
-**Step 3 — Compare Step 1 vs. Step 2.** The task and context are identical — the only difference is the multi-round structure. Compare:
-- Did the Round 2 devil's advocate surface risks that Step 1 ignored?
-- Did the ratings change between Round 1 and Round 2? (If so, the self-critique actually worked.)
-- Did the confidence percentage help you gauge how certain the recommendation really is?
-- Did the "what would need to be true" condition give you a concrete revisit trigger?
+Compare to Step 1:
+- Did the ratings change between Round 1 and Round 2? (If so, the self-critique worked.)
+- Did the devil's advocate surface risks that Step 1 ignored?
 
-This is the value of **probabilistic prompting**: forcing the model to argue against its own first instinct.
+**Step 3 — Quantify the improvement.** Ask the AI:
 
-**Step 4 — Isolate the effect of incentive framing.** Now take your Step 2 prompt and add ONLY an audience frame at the top. Keep everything else identical:
+```
+Compare your Step 1 recommendation with your Round 3 recommendation. What risks or trade-offs did the 3-round analysis surface that the initial recommendation missed? List them.
+```
+
+Review the new considerations. This is the measurable value of self-critique — it surfaces risks that single-pass analysis misses.
+
+**Step 4 — Isolate the incentive framing effect.** Now open a new conversation and paste the same analysis with only an audience frame added at the top:
 
 ```
 This analysis will be presented to the CTO and VP of Engineering for a final architecture decision. The chosen database will serve as our primary data store for the next 3-5 years, so accuracy and completeness are critical.
 
 Take your time and be thorough. Consider edge cases and failure modes that are easy to overlook.
 
-Task: Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
+Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
 
 Options: PostgreSQL, MongoDB, DynamoDB
 
 Provide your analysis in 3 rounds:
-
-Round 1 - Initial assessment: Rate each option from 1-10 for fit, with a one-sentence justification for each.
-
-Round 2 - Devil's advocate: For your top-rated option, list the 3 strongest arguments AGAINST choosing it. Re-rate all options after considering these counter-arguments.
-
-Round 3 - Final recommendation: State your recommended choice with a confidence level (0-100%). Explain what would need to be true for your second-choice option to become the better pick.
+Round 1 - Rate each option from 1-10 for fit, with a one-sentence justification.
+Round 2 - For your top-rated option, list the 3 strongest arguments AGAINST it. Re-rate.
+Round 3 - Final recommendation with confidence level (0-100%). What would change your recommendation?
 ```
 
-**Step 5 — Compare Step 2 vs. Step 4.** The ONLY change was adding the incentive frame. Look for:
+**Step 5 — Compare framed vs. unframed.** Compare to Step 2's analysis (same structure, no incentive frame). Look for:
 - Are the justifications longer or more detailed?
 - Did it mention additional risk factors or edge cases?
-- Is the language more precise (specific numbers, concrete scenarios vs. vague generalities)?
+- Is the language more precise (specific numbers vs. vague generalities)?
 - Did the confidence percentage change?
 
-This isolates the effect of **incentive framing** — telling the model who the audience is and that the stakes are high.
+**Step 6 — Test a different audience.** In the same conversation, ask:
 
-**Step 6 — Build your reusable template.** Now combine everything that worked into a general-purpose decision template:
+```
+Now redo the same analysis, but change the audience: this analysis will be presented to a junior developer who needs to pick a database for their first solo project. Adjust your framing and depth accordingly.
+```
+
+Compare: How does the same analysis change when the stakes and audience shift? Does the AI provide less detail, different recommendations, or different confidence levels?
+
+**Step 7 — Build your reusable template.** Combine everything that worked:
 
 ```
 [INCENTIVE FRAME]
@@ -594,16 +596,17 @@ Present as structured sections with clear headers.
 Keep total response under 500 words.
 ```
 
-**Step 7 — Test your template on a real decision.** Apply your template to a decision you're actually facing — choosing a tool, vendor, approach, or process change. Fill in the brackets and run it. Does the output feel decision-ready?
+**Step 8 — Test on a real decision.** Apply your template to a decision you're actually facing — choosing a tool, vendor, approach, or process change. (If you don't have a real use case, you can make one up.) Fill in the brackets from the template prompt from step 7 and run it.
 
-**Step 8 — Final reflection.** Across all five labs, you've built a toolkit:
-- Lab 1: The 6 building blocks for constructing any prompt
-- Lab 2: Few-shot and CoT for accuracy on nuanced tasks
-- Lab 3: Structured outputs + constraints for production systems
-- Lab 4: Multi-expert and reverse prompting for complex decisions
-- Lab 5: Self-critique + incentive framing for high-stakes quality
+**Step 9 — Evaluate decision-readiness.** Ask yourself: Could you hand this output directly to a decision-maker? If not, what's missing? Ask the AI:
 
-Write down the one technique you'll use first thing tomorrow — and what task you'll apply it to.
+```
+What additional information would a decision-maker need beyond this analysis to make a final call? List the gaps.
+```
+
+This is a useful meta-prompt for any high-stakes output — asking the AI to identify what it *didn't* cover.
+
+**Step 10 — Transition.** You now have a complete toolkit for interactive prompting. But what happens when the AI needs to act autonomously — calling tools, handling errors, and making decisions without you in the loop? That's Lab 6.
 
 ---
 
