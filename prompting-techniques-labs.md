@@ -268,6 +268,7 @@ Key takeaway: CoT improves *how* the AI reasons but can't teach it rules it does
 
 ---
 
+
 ## Lab 3: Production Prompt Engineering (12 minutes)
 
 **Goal**: Build a structured, constrained prompt that produces consistent, machine-parseable JSON output suitable for feeding into a real system.
@@ -276,129 +277,127 @@ Key takeaway: CoT improves *how* the AI reasons but can't teach it rules it does
 
 ### Steps
 
-**Step 1 — Start with a loose prompt.** Paste this in your AI chat:
+**Step 1 — Generate, then break.** Paste this deliberately vague prompt:
 
 ```
-Write a product changelog entry for this feature: We added the ability for users to export their dashboard data as a CSV file.
+Write changelog entries for these three product updates:
+
+1. We added the ability for users to export their dashboard data as a CSV file.
+2. We redesigned the notification preferences page so users can choose per-channel settings for email, SMS, and in-app alerts.
+3. We fixed a bug where the search bar would return no results if the query contained special characters like & or #.
 ```
 
-Look at what you got. Now imagine you need to feed this into an automated system that:
-- Displays it on a release notes page
-- Sends notification emails to affected users
-- Categorizes it in a searchable changelog database
+Look at what you got. It's probably readable — maybe bullet points, maybe a nicely formatted list. Now imagine you need to feed this into an automated system that sends targeted emails to affected users, updates a status page, and files Jira tickets. Could a script reliably extract the data it needs from this output?
 
-Could a script extract the feature title, category, affected product area, and whether users need to do anything? The output is human-readable — but it's not machine-parseable. That's the gap this lab addresses.
+**Step 2 — Try to parse it.** Imagine writing code to process this output automatically. For each entry, you'd need to extract: a title, a change type (feature/bugfix/improvement), a description, which product areas are affected, and whether users need to do anything. Try to answer these questions:
 
-**Step 2 — Define structured JSON output.** Now specify exactly what you want:
+- Is there a consistent, predictable structure a script could rely on?
+- Could you extract the change type programmatically, or is it buried in prose?
+- Are affected product areas listed in a standard way, or described differently each time?
+- Is "user action required" explicitly stated, or would a script have to guess from context?
+- If you ran this prompt 10 times, would the format be identical every time?
+
+The output is fine for a human reader — but it's not **machine-parseable**. That's the production gap. List every reason a script would struggle with this output.
+
+**Step 3 — Design a machine-readable format.** Based on the parsing problems you identified, draft a structured format (JSON, XML, or whatever you prefer) that a script could reliably consume. Define specific field names, data types, and allowed values. Spend 2 minutes designing your schema before looking at Step 4.
+
+**Step 4 — Compare to a reference.** Start a new conversation and paste this fully constrained version:
 
 ```
-Task: Generate a product changelog entry for a software feature.
+Role: You are a technical writer producing entries for an automated notification system. Every entry must be identically formatted.
 
-Output as JSON with exactly this schema:
+Task: Generate JSON changelog entries for these three product updates:
+
+1. We added the ability for users to export their dashboard data as a CSV file.
+2. We redesigned the notification preferences page so users can choose per-channel settings for email, SMS, and in-app alerts.
+3. We fixed a bug where the search bar would return no results if the query contained special characters like & or #.
+
+Output each entry as JSON with exactly this schema (no extra fields):
 {
-  "title": "Short feature title",
+  "title": "string — max 10 words, sentence case, no trailing period",
   "type": "feature|improvement|bugfix|breaking_change",
-  "description": "One paragraph describing what changed and why",
-  "affected_areas": ["list", "of", "product", "areas"],
+  "description": "string — exactly 2-3 sentences. First: what changed. Second: why it matters. Third (optional): context.",
+  "affected_areas": ["Use ONLY: dashboard, settings, search, auth, billing, notifications, api, reports"],
   "user_action_required": true|false,
-  "details": "Technical details or migration steps if needed"
-}
-
-Feature: We added the ability for users to export their dashboard data as a CSV file.
-```
-
-**Step 3 — Validate the output.** Check the JSON response:
-- Is it valid JSON? (Copy it into jsonlint.com or any JSON validator.)
-- Does it match the schema exactly?
-- Are all fields present with reasonable values?
-
-Compare this to your Step 1 output. The Step 1 prose was human-readable but unparseable. The Step 2 JSON is machine-parseable — a script can extract every field. That's the first layer solved: *structure*.
-
-But look closely at the quality...
-
-**Step 4 — Find what the schema alone doesn't control.** Run the Step 2 prompt for two more features:
-
-```
-Feature: We redesigned the notification preferences page so users can choose per-channel settings for email, SMS, and in-app alerts.
-```
-```
-Feature: We fixed a bug where the search bar would return no results if the query contained special characters like & or #.
-```
-
-Now compare all three JSON outputs:
-- Are the descriptions a consistent length, or is one a sentence and another a full paragraph?
-- Are the titles formatted consistently (sentence case? title case? with or without a period?)?
-- Is the "details" field useful, or did the model just repeat the description?
-- Did the model correctly identify "type" for each? (CSV export = feature, notification redesign = improvement, search fix = bugfix)
-
-The schema controls *structure* but not *quality*. That's what constraints are for.
-
-**Step 5 — Add role and constraints for quality.** Enhance the prompt:
-
-```
-Role: You are a technical writer producing changelog entries that will be displayed in the product's release notes page and consumed by an automated notification system. Every entry must follow the exact same format so the system can parse and categorize them.
-
-Task: Generate a product changelog entry.
-
-Output as JSON with exactly this schema:
-{
-  "title": "Max 10 words, no period, sentence case",
-  "type": "feature|improvement|bugfix|breaking_change",
-  "description": "Exactly 2-3 sentences. First sentence: what changed. Second sentence: why it matters to the user. Third sentence (optional): any context.",
-  "affected_areas": ["1-4 product areas, lowercase, use standard names: dashboard, settings, search, auth, billing, notifications, api, reports"],
-  "user_action_required": true|false,
-  "details": "If user_action_required is true, specific steps the user must take. If false, set to null."
+  "details": "string — technical details or migration steps. Must be null if user_action_required is false."
 }
 
 Constraints:
-- Output ONLY valid JSON, no markdown formatting, no explanation before or after
-- Title must be under 10 words with no trailing period
-- Description must be exactly 2-3 sentences (no more, no less)
-- affected_areas must use only the standard area names listed above
-- If no user action is required, "details" must be null (not an empty string, not a repeated description)
-- type must accurately reflect the change: new capability = feature, enhancement to existing = improvement, fix = bugfix, requires migration = breaking_change
-
-Feature: We added the ability for users to export their dashboard data as a CSV file.
+- Output ONLY a valid JSON array, no markdown fences, no explanation before or after
+- type must reflect: new capability = feature, enhancement = improvement, fix = bugfix, requires migration = breaking_change
 ```
 
-**Step 6 — Compare Step 4 vs. Step 5.** Run the constrained prompt for all three features. Now compare against your Step 4 (schema-only) outputs:
-- Are titles now consistently under 10 words in sentence case?
-- Are descriptions exactly 2-3 sentences every time?
-- Is the "details" field null for non-action items (instead of repeating information)?
-- Did the constrained version correctly use the standardized area names?
+Compare this output to your Step 1 results. Notice the difference: Step 1 produced human-readable prose; this produces machine-parseable JSON with controlled values. Run this constrained prompt 2-3 times in separate conversations — the output should be structurally identical every time. How does your schema from Step 3 compare to this reference?
 
-The constraints closed the quality gaps that the schema alone left open.
-
-**Step 7 — Stress-test with a complex feature.** Test with:
+**Step 5 — Stress-test with edge cases.** In the same conversation as Step 4, paste this:
 
 ```
-Feature: We migrated the authentication system from session-based cookies to JWT tokens. Existing sessions will be invalidated on March 15. Users will need to log in again, and any API integrations using session cookies must be updated to use bearer tokens. The new system supports refresh tokens with a 30-day expiry.
+Now generate changelog entries using the same constrained format for these two edge cases:
+
+4. We migrated the authentication system from session-based cookies to JWT tokens. Existing sessions will be invalidated on March 15. Users will need to log in again, and any API integrations using session cookies must be updated to use bearer tokens. The new system supports refresh tokens with a 30-day expiry.
+
+5. Fixed a typo in the footer — "Contant Us" now correctly reads "Contact Us".
 ```
 
-This is a breaking change with multiple user impacts. Does the prompt correctly identify type as "breaking_change", set user_action_required to true, and provide useful migration details?
+These are the extremes: a complex breaking change with multiple impacts, and a trivial typo fix. Check:
+- Did it correctly classify the JWT migration as "breaking_change" with user_action_required: true?
+- Did it provide useful migration details (not just repeat the description)?
+- Did it handle the typo gracefully — or did it inflate a one-line fix into a multi-sentence description to meet the "2-3 sentences" rule?
 
-**Step 8 — Stress-test with a minimal change.** Now try a trivial update:
+That last point is important: constraints that work for normal entries can create awkward results at the extremes. Note any rules that need adjusting.
+
+**Step 6 — Make the AI self-validate.** Now ask the AI to check its own work:
 
 ```
-Feature: Fixed a typo in the footer — "Contant Us" now correctly reads "Contact Us".
-```
-
-Does the prompt handle this gracefully? Does it classify it correctly as a bugfix? Does it avoid inflating a one-word typo into a multi-sentence description?
-
-**Step 9 — Build your validation checklist.** Based on your constraints, write a checklist you could hand to a colleague (or encode in a script) to validate any output:
+Review all 5 changelog entries you generated. For each one, check against these rules and report any violations:
 1. Valid JSON that parses without errors?
 2. All required fields present with correct types?
 3. Title under 10 words, sentence case, no period?
 4. Description exactly 2-3 sentences?
-5. affected_areas using only standardized names?
+5. affected_areas uses only standard names from the allowed list?
 6. details is null when user_action_required is false?
+```
 
-**Step 10 — Reflect.** You've built three versions: loose (Step 1), schema-only (Step 2), and schema + constraints (Step 5). The progression shows three distinct levels of production readiness:
-- **Loose**: Human-readable but not machine-parseable — a script can't extract structured fields from prose
-- **Schema-only**: Parseable and structured, but with uncontrolled quality variation (inconsistent lengths, vague data, repeated fields)
-- **Schema + constraints**: Parseable, structured, AND consistently high quality with enforced rules
+Did the AI catch issues it introduced? This is a powerful production pattern: you can build validation directly into your prompts so the AI checks itself before returning results.
 
-Which version could you hand off to a developer to feed into an automated release notes system? That's the bar for "production-ready."
+**Step 7 — Combine into one production prompt.** You've now built three layers: schema (Step 4), edge-case testing (Step 5), and self-validation (Step 6). In production, these all go into a single prompt. Start a new conversation and paste this combined version:
+
+```
+Role: You are a technical writer producing entries for an automated notification system.
+
+Task: Generate JSON changelog entries for these product updates:
+
+1. We added the ability for users to export their dashboard data as a CSV file.
+2. We redesigned the notification preferences page so users can choose per-channel settings for email, SMS, and in-app alerts.
+3. We fixed a bug where the search bar would return no results if the query contained special characters like & or #.
+4. We migrated authentication from session-based cookies to JWT tokens. Existing sessions invalidated March 15. Users must log in again; API integrations using session cookies must switch to bearer tokens.
+5. Fixed a typo in the footer — "Contant Us" now reads "Contact Us".
+
+Schema (no extra fields):
+{
+  "title": "max 10 words, sentence case, no trailing period",
+  "type": "feature|improvement|bugfix|breaking_change",
+  "description": "2-3 sentences. First: what changed. Second: why it matters. Third (optional): context. For trivial fixes, 1 sentence is acceptable.",
+  "affected_areas": ["ONLY: dashboard, settings, search, auth, billing, notifications, api, reports"],
+  "user_action_required": true|false,
+  "details": "migration steps or technical details. null if user_action_required is false."
+}
+
+Constraints:
+- Output ONLY valid JSON array — no markdown, no commentary
+- type: new capability = feature, enhancement = improvement, fix = bugfix, requires migration = breaking_change
+
+After generating, self-validate: check every entry against the schema rules above. If any entry violates a rule, fix it and note what you corrected.
+```
+
+Notice the refinement: "For trivial fixes, 1 sentence is acceptable" — that's the edge-case fix from Step 5, built directly into the schema. And self-validation is baked into the prompt itself.
+
+**Step 8 — Review the combined output.** Did the single production prompt produce clean results for all 5 entries — including the edge cases? Did self-validation catch anything? Compare this to the multi-step process from Steps 4-6. In production, one well-designed prompt replaces the iterative testing you did in this lab.
+
+**Step 9 (Optional) — Apply to your own work.** Think of a structured output you need at work — a status report, an incident summary, a meeting recap, a product review. Design a production prompt for it with all three layers: schema, constraints, and self-validation. Test it with both typical and edge-case inputs.
+
+**Step 10 — Reflect.** You built three layers of prompt quality: schema (structure), constraints (quality control), and self-validation (built-in error checking). The schema solves "can a script read this?" Constraints solve "will the data be reliable?" Self-validation solves "will it catch its own mistakes?" In production, all three go into one prompt — and you stress-test with edge cases before deploying.
+
 ---
 
 ## Lab 4: Multi-Expert & Reverse Prompting (12 minutes)
