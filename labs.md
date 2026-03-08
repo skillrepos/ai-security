@@ -737,20 +737,18 @@ This is a prompt gap. The SYSTEM prompt has no rule telling the agent to verify 
 
 > "Always include a brief travel tip for the location in your final answer."
 
-Run the agent with any city. Does the final answer now include a travel tip? If it does, the prompt change worked. If not, try making the instruction more specific (e.g., "After the weather summary, add one sentence starting with 'Travel tip:'").
+![Fixed prompt](./images/prompt-accel12.png?raw=true "Fixed prompt")
 
-**Step 9 — Break the prompt on purpose.** Now remove the entire "CRITICAL RULES" section from the SYSTEM prompt. Save and run the agent with "Paris, France" again. What breaks?
-- Does it still follow the Thought/Action/Observation format?
-- Does it call the tool, or does it hallucinate weather data?
-- Does it wait for the tool result, or does it make up an observation?
+<br><br>
 
-Compare to your prediction from Step 4.
+**Step 9 - Run again.** Run the agent with any city. Does the final answer now include a travel tip? If it does, the prompt change worked. If not, try making the instruction more specific (e.g., "After the weather summary, add one sentence starting with 'Travel tip:'").
 
-**Step 10 — Restore and reflect.** Undo your changes (Ctrl+Z or re-paste the original SYSTEM prompt). Run the agent one more time to confirm it works correctly again.
+![Fixed prompt](./images/prompt-accel12.png?raw=true "Fixed prompt")
 
-The key lesson: you changed the agent's behavior — added capabilities, fixed bugs, and broke functionality — by editing **only the SYSTEM prompt text**. You never modified a line of Python. The prompt is the control layer for AI agents.
 
-**Step 11 — Extract the pattern.** Agent prompts need four elements that chat prompts don't:
+The key lesson: you changed the agent's behavior — added capabilities and fixed bugs — by editing **only the SYSTEM prompt text**. You never modified a line of Python. The prompt is the control layer for AI agents.
+
+**Step 10 — Extract the pattern.** Agent prompts need four elements that chat prompts don't:
 - **Tool definitions** — what tools exist and what they do
 - **Format rules** — how the agent communicates (Thought/Action/Observation)
 - **Execution rules** — when to act vs. wait, how to sequence steps
@@ -805,7 +803,15 @@ Watch the startup — the client automatically **discovers** the available promp
 - The **server** applies its summarize prompt template to your text
 - The result flows back to the client
 
+Here's some example text if you want to use it:
+
+```
+Artificial intelligence is becoming a common part of everyday life, from recommendation systems and virtual assistants to tools that help businesses analyze data more quickly. While these systems can save time and improve decision-making, they also raise important questions about privacy, accuracy, and fairness. Organizations that adopt AI successfully usually combine the technology with clear goals, reliable data, and human oversight rather than expecting it to solve every problem on its own. As AI continues to evolve, the most effective users will likely be those who understand both its strengths and its limitations.
+```
+
 The prompt that controlled the summarization lives on the **server**, not in the client code.
+
+![MCP server and agent](./images/prompt-accel15.png?raw=true "MCP server and agent")
 
 <br><br>
 
@@ -813,51 +819,71 @@ The prompt that controlled the summarization lives on the **server**, not in the
 
 Notice the structure: the decorator names the prompt, the function returns the template, and `{text}` is where the user's input gets inserted.
 
+![Prompt template](./images/prompt-accel16.png?raw=true "Prompt template")
+
 <br><br>
 
 **Step 5 — Modify a prompt.** Change the "summarize" prompt template to something more specific:
 
 > "You are a technical writer. Summarize the following text in exactly 2 bullet points, focusing on actionable takeaways: {text}"
 
-Save the file, restart the server (Ctrl+C in the first terminal, then `python mcp_server.py` again), and restart the client. Test with the same text as Step 3.
+![Updated prompt resource](./images/prompt-accel17.png?raw=true "Updated prompt resource")
+
+<br><br>
+
+**Step 6 - Rerun.** Save the file, restart the server (Ctrl+C in the first terminal, then `python mcp_server.py` again), and restart the client. Test with the same text as Step 3.
 
 Did the output change? You changed the agent's behavior by editing the **server** — the client code didn't change at all.
 
+![Revised output](./images/prompt-accel17.png?raw=true "Revised output")
+
+
 <br><br>
 
-**Step 6 — See the separation.** This is the MCP advantage: the prompt lives on the server, not in the agent. In Lab 5, the prompt was embedded in the agent's code. Here, it's a **resource** that can be updated independently. Imagine 10 different agents all using this server's "summarize" prompt — you update it in one place, and all 10 agents get the new behavior instantly.
+This is the MCP advantage: the prompt lives on the server, not in the agent. In Lab 5, the prompt was embedded in the agent's code. Here, it's a **resource** that can be updated independently. Imagine 10 different agents all using this server's "summarize" prompt — you update it in one place, and all 10 agents get the new behavior instantly.
 
 <br><br>
 
-**Step 7 — Create a new prompt resource.** Add a new prompt to the server. In `mcp_server.py`, add a new function:
+**Step 7 — Create a new prompt resource.** Add a new prompt to the server. The existing prompts are `summarize`, `reword`, and `expand` — all general text transformations. You'll add `action_items`, which extracts to-do items from text.
+
+First, add the prompt resource in `mcp_server.py`:
 
 ```python
-@server.prompt("eli5")
-def eli5_prompt(text: str) -> str:
-    return f"Explain the following text as if the reader is 5 years old. Use simple words and a fun analogy: {text}"
+@server.prompt("action_items")
+def action_items_prompt(text: str) -> str:
+    """Extract action items from meeting notes or documents."""
+    return f"Extract all action items from the following text. Return each as a bullet point starting with a verb. If no action items exist, say 'No action items found.'\n\n{text}"
 ```
 
-You'll also need to add a matching tool stub so the client can invoke it (follow the pattern of the existing tool functions). Restart the server and client. Test your new "eli5" prompt — does the output actually simplify the text?
+![Additional prompt resource](./images/prompt-accel19.png?raw=true "Additional prompt resource")
 
 <br><br>
 
-**Step 8 — Add a parameter.** MCP prompts can accept multiple parameters, not just text. Modify your "eli5" prompt to accept an `audience_age` parameter:
+**Step 8 - Add the tool stub.** Then add the matching tool stub so the client can invoke it (follow the pattern of the existing tool functions):
 
 ```python
-@server.prompt("eli5")
-def eli5_prompt(text: str, audience_age: str = "5") -> str:
-    return f"Explain the following text for someone who is {audience_age} years old. Use age-appropriate language and examples: {text}"
+@server.tool("action_items")
+def action_items_tool(text: str) -> str:
+    print(f"{BLUE}[TOOL REQUEST] action_items_tool received input: {text!r}{RESET}")
+    print(f"{GREEN}[TOOL RETURN] action_items_tool returning: {text!r}{RESET}")
+    return text
 ```
 
-Restart and test with different ages. The same prompt resource now adapts its behavior based on a parameter — without any change to the client agent.
+![Additional tool stub](./images/prompt-accel20.png?raw=true "Additional tool stub")
 
 <br><br>
 
-**Step 9 — Connect back to prompt engineering.** Look at the prompts you've written on the MCP server. They use the same techniques from Labs 1-4:
+**Step 9 - Run again.** Save the file. Restart both the server and client. Choose the function "action_items". Test by pasting a paragraph of meeting notes (or make some up, e.g., "We agreed to launch the beta by Friday. Sarah will update the docs and Mike needs to fix the login bug before Thursday."). Does it extract clean action items?
+
+![New function](./images/prompt-accel21.png?raw=true "New function")
+
+<br><br>
+
+**Step 10 — Connect back to prompt engineering.** Look at the prompts you've written on the MCP server. They use the same techniques from earlier labs:
 - **Role**: "You are a technical writer" (Lab 1 building block)
-- **Constraints**: "exactly 2 bullet points" (Lab 3 production techniques)
-- **Format**: "actionable takeaways" (Lab 3 structured outputs)
-- **Audience framing**: "for someone who is {audience_age} years old" (Lab 4 Step 9)
+- **Constraints**: "exactly 2 bullet points", "starting with a verb" (Lab 3 production techniques)
+- **Format**: "actionable takeaways", "bullet point" (Lab 3 structured outputs)
+
 
 MCP doesn't replace prompt engineering — it gives your prompts a standard way to be discovered, shared, and updated across multiple agents.
 
@@ -869,8 +895,7 @@ MCP doesn't replace prompt engineering — it gives your prompts a standard way 
 
 Both use the same prompt techniques you learned in Labs 1-4. The difference is **where the prompt lives and who controls it**. As AI systems grow from a single agent to many agents working together, MCP's separation of prompts from agents becomes essential.
 
-Write down: which of these two approaches (embedded prompt vs. MCP resource) would work better for your team's AI workflows, and why?
-
+Consider which of these two approaches (embedded prompt vs. MCP resource) would work better for your team's AI workflows, and why?
 <br><br>
 
 <p align="center">— — —&nbsp;&nbsp;&nbsp;END OF LAB 6&nbsp;&nbsp;&nbsp;— — —</p>

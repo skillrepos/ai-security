@@ -121,12 +121,12 @@ async def main():
             print(f"Warm-up skipped due to: {type(e).__name__}: {e!r}")
 
         while True:
-            cmd = input("\nEnter tool name (or 'exit'): ").strip().lower()
+            cmd = input("\nEnter function name (or 'exit'): ").strip().lower()
             if cmd == "exit":
                 break
 
             if cmd not in tool_names:
-                print("Unknown tool:", cmd)
+                print("Unknown function:", cmd)
                 continue
 
             user_input = input("Enter input text: ").strip()
@@ -134,8 +134,8 @@ async def main():
                 continue
 
             try:
-                # Get the prompt template for this tool from the server
-                print(f"{BLUE}Requesting prompt for tool: {cmd}{RESET}")
+                # Get the prompt template for this function from the server
+                print(f"{BLUE}Requesting prompt for function: {cmd}{RESET}")
                 # Pass the actual user input as the 'text' argument
                 prompt_result = await client.get_prompt(cmd, arguments={"text": user_input})
 
