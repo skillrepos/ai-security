@@ -526,121 +526,163 @@ Notice the two additions: the **incentive frame** at the top ("This will inform 
 - **Combined**: Use reverse prompting first (discover requirements), then feed into a multi-expert panel (stress-test), then add self-critique rounds for the final recommendation. Write down one real situation where this layered approach would be valuable.
 ---
 
-## Lab 5: Optimization & Integration (10 minutes)
+## Lab 5: Prompting for an AI Agent (12 minutes)
 
-**Goal**: Apply probabilistic prompting and incentive framing to maximize quality on a high-stakes task, then build a reusable decision-making template.
+**Goal**: See how the system prompt controls a real AI agent's behavior, then modify it to change that behavior — without touching any code.
 
-**What you'll learn**: How multi-round self-critique and audience framing each independently improve output quality — and how combining them produces the most reliable results.
+**What you'll learn**: How agent prompts differ from chat prompts, and how editing a system prompt changes autonomous AI behavior in real time.
+
+**Setup**: Open the GitHub Codespace for this lab. The weather agent is pre-built and working — you'll only edit the prompt text inside the code, never the code itself.
 
 ### Steps
 
-**Step 1 — Baseline decision analysis.** Paste:
+**Step 1 — Run the working agent.** In the Codespace terminal, run:
 
 ```
-Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
-
-Options: PostgreSQL, MongoDB, DynamoDB
-
-Which should we choose and why?
+python agent.py
 ```
 
-Before reading the response, predict: Will the AI acknowledge uncertainty and trade-offs, or just advocate for one option?
+When prompted, enter: **Paris, France**
 
-Now read it. Note whether it mentions any risks with its recommended choice.
+Watch the output carefully. You'll see a loop: the agent **Thinks** (reasons about what to do), takes an **Action** (calls a weather tool), receives an **Observation** (the tool's result), then produces a **Final Answer**. This is the TAO pattern: Thought → Action → Observation. Note the exact format of the tool call — the agent outputs `Action:` and `Args:` on specific lines.
 
-**Step 2 — Add self-critique.** In the same conversation, ask:
+**Step 2 — Read the system prompt.** Open `agent.py` in the Codespace editor. Find the `SYSTEM` prompt — it's a large text string near the top of the file. Read through it and identify these sections:
+- **Tool definition**: Where does it describe the `get_weather` tool and its parameters?
+- **Format rules**: Where does it specify the Thought/Action/Args/Observation format?
+- **Critical rules**: Where does it tell the agent when to STOP and wait?
 
-```
-Now redo this analysis in 3 rounds:
+Don't modify anything yet — just map the sections.
 
-Round 1 - Initial assessment: Rate each option from 1-10 for fit, with a one-sentence justification.
+**Step 3 — Map prompt to behavior.** Go back to the output from Step 1. For each behavior you observed, find the **specific line** in the SYSTEM prompt that caused it:
+- The agent reasoned before acting → which line?
+- The tool call used a specific format (Action/Args) → which line?
+- The agent waited for the tool result before continuing → which line?
 
-Round 2 - Devil's advocate: For your top-rated option, list the 3 strongest arguments AGAINST choosing it. Then re-rate all options.
+This is the key insight: every behavior you saw came from a line in the prompt. The Python code is just plumbing — the prompt is the control layer.
 
-Round 3 - Final recommendation: State your choice with a confidence level (0-100%). Explain what would need to be true for your second-choice option to become the better pick.
-```
+**Step 4 — Predict a change.** Before editing anything, answer this: if you removed the line "After outputting Action/Args, STOP and wait for Observation" from the SYSTEM prompt, what would happen? Would the agent still call the tool? Would it wait for results? Would it make up weather data?
 
-Compare to Step 1:
-- Did the ratings change between Round 1 and Round 2? (If so, the self-critique worked.)
-- Did the devil's advocate surface risks that Step 1 ignored?
+Write your prediction down. You'll test it in Step 8.
 
-**Step 3 — Quantify the improvement.** Ask the AI:
+**Step 5 — Test a location edge case.** Run the agent again and enter: **Sydney, Australia**
 
-```
-Compare your Step 1 recommendation with your Round 3 recommendation. What risks or trade-offs did the 3-round analysis surface that the initial recommendation missed? List them.
-```
+The agent should call the weather tool and return results. But check the coordinates it used — did it use **negative** latitude for Sydney (which is in the Southern Hemisphere)? The SYSTEM prompt says nothing about hemisphere handling. If the agent used positive latitude, the weather data might be for the wrong location entirely. This is a prompt gap — a missing rule that causes silent failure.
 
-Review the new considerations. This is the measurable value of self-critique — it surfaces risks that single-pass analysis misses.
+**Step 6 — Fix the prompt.** Edit the SYSTEM prompt in `agent.py` to add a rule about coordinate handling. Add a line in the CRITICAL RULES section, something like:
 
-**Step 4 — Isolate the incentive framing effect.** Now open a new conversation and paste the same analysis with only an audience frame added at the top:
+> "For locations in the Southern Hemisphere, use negative latitude. For locations in the Western Hemisphere, use negative longitude."
 
-```
-This analysis will be presented to the CTO and VP of Engineering for a final architecture decision. The chosen database will serve as our primary data store for the next 3-5 years, so accuracy and completeness are critical.
+Save the file, run the agent again with "Sydney, Australia," and verify it now uses negative latitude. You just changed agent behavior by editing text — no code changes.
 
-Take your time and be thorough. Consider edge cases and failure modes that are easy to overlook.
+**Step 7 — Add a new behavior.** Add another rule to the SYSTEM prompt:
 
-Recommend a database for a new e-commerce application that expects 10,000 daily active users, needs to store product catalogs, user profiles, and order history.
+> "Always include a brief travel tip for the location in your final answer."
 
-Options: PostgreSQL, MongoDB, DynamoDB
+Run the agent with any city. Does the final answer now include a travel tip? If it does, the prompt change worked. If not, try making the instruction more specific (e.g., "After the weather summary, add one sentence starting with 'Travel tip:'").
 
-Provide your analysis in 3 rounds:
-Round 1 - Rate each option from 1-10 for fit, with a one-sentence justification.
-Round 2 - For your top-rated option, list the 3 strongest arguments AGAINST it. Re-rate.
-Round 3 - Final recommendation with confidence level (0-100%). What would change your recommendation?
-```
+**Step 8 — Break the prompt on purpose.** Now remove the entire "CRITICAL RULES" section from the SYSTEM prompt. Save and run the agent with "Paris, France" again. What breaks?
+- Does it still follow the Thought/Action/Observation format?
+- Does it call the tool, or does it hallucinate weather data?
+- Does it wait for the tool result, or does it make up an observation?
 
-**Step 5 — Compare framed vs. unframed.** Compare to Step 2's analysis (same structure, no incentive frame). Look for:
-- Are the justifications longer or more detailed?
-- Did it mention additional risk factors or edge cases?
-- Is the language more precise (specific numbers vs. vague generalities)?
-- Did the confidence percentage change?
+Compare to your prediction from Step 4.
 
-**Step 6 — Test a different audience.** In the same conversation, ask:
+**Step 9 — Restore and reflect.** Undo your changes (Ctrl+Z or re-paste the original SYSTEM prompt). Run the agent one more time to confirm it works correctly again.
 
-```
-Now redo the same analysis, but change the audience: this analysis will be presented to a junior developer who needs to pick a database for their first solo project. Adjust your framing and depth accordingly.
-```
+The key lesson: you changed the agent's behavior — added capabilities, fixed bugs, and broke functionality — by editing **only the SYSTEM prompt text**. You never modified a line of Python. The prompt is the control layer for AI agents.
 
-Compare: How does the same analysis change when the stakes and audience shift? Does the AI provide less detail, different recommendations, or different confidence levels?
+**Step 10 — Extract the pattern.** Agent prompts need four elements that chat prompts don't:
+- **Tool definitions** — what tools exist and what they do
+- **Format rules** — how the agent communicates (Thought/Action/Observation)
+- **Execution rules** — when to act vs. wait, how to sequence steps
+- **Guardrails** — what NOT to do, when to stop
 
-**Step 7 — Build your reusable template.** Combine everything that worked:
+These are the same prompt engineering concepts from Labs 1-4 (role, constraints, format), but now they control autonomous behavior instead of a single response.
 
-```
-[INCENTIVE FRAME]
-This analysis will inform a critical decision for [stakeholder].
-Accuracy and completeness are essential. Take your time.
+---
 
-[CONTEXT]
-Decision: [What we're deciding]
-Options: [Option A, Option B, Option C]
-Current situation: [Key constraints and requirements]
-Timeline: [When decision is needed and implementation horizon]
+## Lab 6: Prompting via MCP (12 minutes)
 
-[MULTI-ROUND ANALYSIS]
-Round 1: Rate each option (1-10) with one-line justification.
-Round 2: For the top option, list 3 strongest counter-arguments. Re-rate.
-Round 3: Final recommendation with:
-- Confidence level (0-100%)
-- Biggest risk of recommended option
-- What would change your recommendation
-- Revisit trigger for 6-month check-in
+**Goal**: Learn how MCP (Model Context Protocol) separates prompt design from agent code — so you can update prompts on a server without touching the agents that use them.
 
-[FORMAT]
-Present as structured sections with clear headers.
-Keep total response under 500 words.
-```
+**What you'll learn**: How to create, modify, and parameterize prompt resources on an MCP server, and why this separation matters for managing AI at scale.
 
-**Step 8 — Test on a real decision.** Apply your template to a decision you're actually facing — choosing a tool, vendor, approach, or process change. (If you don't have a real use case, you can make one up.) Fill in the brackets from the template prompt from step 7 and run it.
+**Setup**: This lab uses two terminals in the Codespace — one for the MCP server, one for the client agent. The code is pre-built; you'll only edit prompt text on the server side.
 
-**Step 9 — Evaluate decision-readiness.** Ask yourself: Could you hand this output directly to a decision-maker? If not, what's missing? Ask the AI:
+### Steps
+
+**Step 1 — Start the MCP server.** In the first terminal, run:
 
 ```
-What additional information would a decision-maker need beyond this analysis to make a final call? List the gaps.
+python mcp_server.py
 ```
 
-This is a useful meta-prompt for any high-stakes output — asking the AI to identify what it *didn't* cover.
+Watch the startup output. The server registers its available prompts (summarize, reword, expand) and tools. Leave this terminal running.
 
-**Step 10 — Transition.** You now have a complete toolkit for interactive prompting. But what happens when the AI needs to act autonomously — calling tools, handling errors, and making decisions without you in the loop? That's Lab 6.
+**Step 2 — Run the client agent.** Open a second terminal and run:
+
+```
+python mcp_client_agent.py
+```
+
+Watch the startup — the client automatically **discovers** the available prompts and tools from the server. It doesn't have these built in; it asks the server what's available. This is MCP's discovery mechanism.
+
+**Step 3 — Test the "summarize" prompt.** When the client prompts you, enter `summarize` as the tool. Then paste some text (a paragraph from any article, or make something up). Watch both terminals:
+- The **client** sends your text to the server
+- The **server** applies its summarize prompt template to your text
+- The result flows back to the client
+
+The prompt that controlled the summarization lives on the **server**, not in the client code.
+
+**Step 4 — Read the server's prompt code.** Open `mcp_server.py` in the editor. Find the function decorated with `@server.prompt("summarize")`. Inside, you'll see a prompt template with a `{text}` placeholder. This is the **prompt resource** — it's defined and managed on the server, and any agent that connects to this server can use it.
+
+Notice the structure: the decorator names the prompt, the function returns the template, and `{text}` is where the user's input gets inserted.
+
+**Step 5 — Modify a prompt.** Change the "summarize" prompt template to something more specific:
+
+> "You are a technical writer. Summarize the following text in exactly 2 bullet points, focusing on actionable takeaways: {text}"
+
+Save the file, restart the server (Ctrl+C in the first terminal, then `python mcp_server.py` again), and restart the client. Test with the same text as Step 3.
+
+Did the output change? You changed the agent's behavior by editing the **server** — the client code didn't change at all.
+
+**Step 6 — See the separation.** This is the MCP advantage: the prompt lives on the server, not in the agent. In Lab 5, the prompt was embedded in the agent's code. Here, it's a **resource** that can be updated independently. Imagine 10 different agents all using this server's "summarize" prompt — you update it in one place, and all 10 agents get the new behavior instantly.
+
+**Step 7 — Create a new prompt resource.** Add a new prompt to the server. In `mcp_server.py`, add a new function:
+
+```python
+@server.prompt("eli5")
+def eli5_prompt(text: str) -> str:
+    return f"Explain the following text as if the reader is 5 years old. Use simple words and a fun analogy: {text}"
+```
+
+You'll also need to add a matching tool stub so the client can invoke it (follow the pattern of the existing tool functions). Restart the server and client. Test your new "eli5" prompt — does the output actually simplify the text?
+
+**Step 8 — Add a parameter.** MCP prompts can accept multiple parameters, not just text. Modify your "eli5" prompt to accept an `audience_age` parameter:
+
+```python
+@server.prompt("eli5")
+def eli5_prompt(text: str, audience_age: str = "5") -> str:
+    return f"Explain the following text for someone who is {audience_age} years old. Use age-appropriate language and examples: {text}"
+```
+
+Restart and test with different ages. The same prompt resource now adapts its behavior based on a parameter — without any change to the client agent.
+
+**Step 9 — Connect back to prompt engineering.** Look at the prompts you've written on the MCP server. They use the same techniques from Labs 1-4:
+- **Role**: "You are a technical writer" (Lab 1 building block)
+- **Constraints**: "exactly 2 bullet points" (Lab 3 production techniques)
+- **Format**: "actionable takeaways" (Lab 3 structured outputs)
+- **Audience framing**: "for someone who is {audience_age} years old" (Lab 4 Step 9)
+
+MCP doesn't replace prompt engineering — it gives your prompts a standard way to be discovered, shared, and updated across multiple agents.
+
+**Step 10 — Reflect.** You've now seen two levels of prompt engineering for AI systems:
+- **Lab 5**: System prompts that control a single agent's behavior. The prompt is embedded in the agent code. To change behavior, you edit the agent's file.
+- **Lab 6**: MCP prompt resources that live on a server. Multiple agents can discover and use them. To change behavior, you edit the server — agents pick up the change automatically.
+
+Both use the same prompt techniques you learned in Labs 1-4. The difference is **where the prompt lives and who controls it**. As AI systems grow from a single agent to many agents working together, MCP's separation of prompts from agents becomes essential.
+
+Write down: which of these two approaches (embedded prompt vs. MCP resource) would work better for your team's AI workflows, and why?
 
 ---
 
