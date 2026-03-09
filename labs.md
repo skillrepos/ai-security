@@ -2,7 +2,7 @@
 ## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting
 
 ## Session labs 
-## Revision 4.6 - 03/08/26
+## Revision 4.7 - 03/09/26
 
 ## How to Use These Labs
 
@@ -174,7 +174,7 @@ Were you right about the AI's answer? This seems low-priority — the customer i
 
 <br><br>
 
-**Step 2 — Batch classify.** Now test all 5 tickets at once to build a zero-shot baseline:
+**Step 2 — Batch classify.** Now let's have the AI assess 5 tickets at once to build a zero-shot baseline:
 
 ```
 You are a support ticket classifier. Assign exactly one priority level to each ticket: P1-Critical, P2-High, P3-Medium, or P4-Low.
