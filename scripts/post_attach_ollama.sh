@@ -62,7 +62,12 @@ run_warmup_if_stale() {
     py_cmd="$REPO_ROOT/py_env/bin/python"
   fi
 
-  (cd "$REPO_ROOT" && "$py_cmd" scripts/warmup.py)
+  if ! (cd "$REPO_ROOT" && "$py_cmd" scripts/warmup.py); then
+    echo "WARNING: Warmup did not complete successfully."
+    echo "You can retry later with: bash scripts/post_attach_ollama.sh"
+    return
+  fi
+
   touch "$WARMUP_STAMP_FILE"
   echo "Warmup complete; updated $WARMUP_STAMP_FILE"
 }

@@ -18,6 +18,8 @@ What it does
 """
 from __future__ import annotations
 import os
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -29,28 +31,68 @@ import requests
 MODEL   = os.getenv("OLLAMA_MODEL", "granite4:3b")
 HOST    = os.getenv("OLLAMA_HOST",  "http://127.0.0.1:11434")
 TIMEOUT = int(os.getenv("OLLAMA_WARMUP_TIMEOUT", "300"))   # seconds
+AUTO_PULL = os.getenv("OLLAMA_WARMUP_AUTO_PULL", "1").lower() not in {"0", "false", "no"}
 WARMUP_PROMPT  = "Reply with the single word: ready"
 WARMUP_SYSTEM  = "You are a helpful assistant."
 # ── Helpers ──────────────────────────────────────────────────────────────────
-def _check_server() -> None:
-    """Verify the Ollama server is up before we start."""
+def _check_server() -> set[str]:
+    """Verify the Ollama server is up and return known model tags."""
     try:
         r = requests.get(f"{HOST}/api/tags", timeout=10)
         r.raise_for_status()
     except Exception as exc:
         sys.exit(
-            f"\\n✗ Cannot reach Ollama at {HOST}.\\n"
-            f"  Make sure Ollama is running (e.g. `ollama serve` or ./scripts/startOllama.sh).\\n"
-            f"  Error: {exc}\\n"
+            f"\n✗ Cannot reach Ollama at {HOST}.\n"
+            f"  Make sure Ollama is running (e.g. `ollama serve` or ./scripts/startOllama.sh).\n"
+            f"  Error: {exc}\n"
         )
-    # Warn if the model isn't pulled yet
-    tags = {m.get("name", "") for m in r.json().get("models", [])}
-    if not any(MODEL in t for t in tags):
-        print(f"  ⚠  Model '{MODEL}' not found locally – pulling now (this may take a while)…")
-        pull = requests.post(f"{HOST}/api/pull", json={"name": MODEL, "stream": False},
-                             timeout=600)
-        pull.raise_for_status()
-        print(f"  ✓  Pull complete.\\n")
+    return {m.get("name", "") for m in r.json().get("models", [])}
+
+
+def _pull_model_with_cli() -> bool:
+    """Pull model via CLI for visible progress and keepalive output."""
+    if not shutil.which("ollama"):
+        return False
+
+    print(f"  ↳ Running: ollama pull {MODEL}")
+    try:
+        # Keep stdout/stderr attached so progress is visible in post-attach logs.
+        subprocess.run(["ollama", "pull", MODEL], check=True)
+    except subprocess.CalledProcessError as exc:
+        sys.exit(f"\n✗ Failed to pull model '{MODEL}' via CLI. Exit code: {exc.returncode}\n")
+    return True
+
+
+def _pull_model_with_api() -> None:
+    """Fallback model pull through API when CLI isn't available."""
+    print("  ↳ Falling back to Ollama API pull")
+    try:
+        with requests.post(
+            f"{HOST}/api/pull",
+            json={"name": MODEL, "stream": False},
+            timeout=(10, 3600),
+        ) as pull:
+            pull.raise_for_status()
+    except Exception as exc:
+        sys.exit(f"\n✗ Failed to pull model '{MODEL}' via API. Error: {exc}\n")
+
+
+def _ensure_model_available(tags: set[str]) -> None:
+    """Pull the configured model on first run, if needed."""
+    if any(MODEL in t for t in tags):
+        return
+
+    if not AUTO_PULL:
+        sys.exit(
+            f"\n✗ Model '{MODEL}' is not available locally and auto-pull is disabled.\n"
+            "  Set OLLAMA_WARMUP_AUTO_PULL=1 or pull manually with: ollama pull "
+            f"{MODEL}\n"
+        )
+
+    print(f"  ⚠  Model '{MODEL}' not found locally – pulling now (this may take a while)…")
+    if not _pull_model_with_cli():
+        _pull_model_with_api()
+    print("  ✓  Pull complete.\n")
 def _warmup_generate() -> float:
     """Warm up the /api/generate endpoint (used by common.ollama_client.generate)."""
     t0 = time.perf_counter()
@@ -92,11 +134,12 @@ def _warmup_langchain() -> float:
     return time.perf_counter() - t0
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main() -> None:
-    print(f"\\n🔥  Warming up Ollama model '{MODEL}' at {HOST} …\\n")
+    print(f"\n🔥  Warming up Ollama model '{MODEL}' at {HOST} ...\n")
     t_total = time.perf_counter()
     # 1. Server / model availability
     print("  [1/4] Checking server & model availability …", end=" ", flush=True)
-    _check_server()
+    tags = _check_server()
+    _ensure_model_available(tags)
     print("ok")
     # 2. /api/generate  (simple_prompt_runner.py, cot_runner.py, rag_prompt_runner.py)
     print("  [2/4] Priming /api/generate  (generate-based scripts) …", end=" ", flush=True)
@@ -111,6 +154,9 @@ def main() -> None:
     dt = _warmup_langchain()
     print(f"done  ({dt:.1f}s)")
     elapsed = time.perf_counter() - t_total
-    print(f"\\n✅  Warmup complete in {elapsed:.1f}s. Model '{MODEL}' is hot – lab scripts will be fast!\\n")
+    print(f"\n✅  Warmup complete in {elapsed:.1f}s. Model '{MODEL}' is hot - lab scripts will be fast!\n")
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit("\n⚠ Warmup interrupted. Re-run scripts/post_attach_ollama.sh when ready.\n")
