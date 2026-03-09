@@ -2,7 +2,7 @@
 ## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting
 
 ## Session labs 
-## Revision 5.2 - 03/09/26
+## Revision 5.3 - 03/09/26
 
 ## How to Use These Labs
 
@@ -743,7 +743,7 @@ Always include a brief travel tip for the location in your final answer.
 
 **Step 8 - Run again.** Run the agent with any city. Does the final answer now include a travel tip? If it does, the prompt change worked. If not, try making the instruction more specific (e.g., "After the weather summary, add one sentence starting with 'Travel tip:'").
 
-![Fixed prompt](./images/prompt-accel12.png?raw=true "Fixed prompt")
+![Fixed prompt](./images/prompt-accel13.png?raw=true "Fixed prompt")
 
 
 The key lesson: you changed the agent's behavior — added capabilities and fixed bugs — by editing **only the SYSTEM prompt text**. You never modified a line of Python. The prompt is the control layer for AI agents.
