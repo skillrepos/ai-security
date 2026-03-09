@@ -289,7 +289,7 @@ Compare all three tables. Few-shot should nail all 5 — the examples directly t
 
 <br><br>
 
-**Step 7 — Compare results.** Fill in your scorecard:
+**Step 7 — Compare results.** (Virtually) fill in your scorecard:
 
 | Ticket (short) | Zero-Shot | CoT (no rules) | Few-Shot | Company Policy |
 |----------------|-----------|----------------|----------|----------------|
@@ -298,6 +298,8 @@ Compare all three tables. Few-shot should nail all 5 — the examples directly t
 | Pricing page glitch (casual) | | | | P2 |
 | 25-person outage | | | | P1 |
 | $45 double charge | | | | P4 |
+
+<br><br>
 
 You should see: zero-shot (~2/5), CoT (~2/5 — same answers, but with visible reasoning), few-shot (5/5). The takeaway: CoT adds **auditability** (you can see *why* the AI chose each priority), but it doesn't add **accuracy** when the problem is missing domain knowledge. Only few-shot — which transfers the company's actual rules through examples — closes the gap.
 
