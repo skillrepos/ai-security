@@ -2,7 +2,7 @@
 ## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting
 
 ## Session labs 
-## Revision 5.1 - 03/09/26
+## Revision 5.2 - 03/09/26
 
 ## How to Use These Labs
 
@@ -731,7 +731,7 @@ If the user asks for a city you are not confident is a real, existing city, resp
 
 <br><br>
 
-**Step 7 — Add a new behavior.** Add another rule to the SYSTEM prompt:
+**Step 7 — Add a new behavior.** Add another rule to the SYSTEM prompt. Save your changes when done.
 
 ```
 Always include a brief travel tip for the location in your final answer.
