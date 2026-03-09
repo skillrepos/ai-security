@@ -2,7 +2,7 @@
 ## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting
 
 ## Session labs 
-## Revision 5.3 - 03/09/26
+## Revision 5.4 - 03/09/26
 
 ## How to Use These Labs
 
@@ -788,7 +788,7 @@ Watch the startup output. The server registers its available prompts (summarize,
 
 <br><br>
 
-**Step 2 — Run the client agent.** Open a second terminal and run:
+**Step 2 — Run the client agent.** Split the current terminal or open a second terminal and run:
 
 ```
 python mcp_client_agent.py
@@ -802,6 +802,10 @@ Watch the startup — the client automatically **discovers** the available promp
 - The **client** sends your text to the server
 - The **server** applies its summarize prompt template to your text
 - The result flows back to the client
+
+```
+summarize
+```
 
 Here's some example text if you want to use it:
 
