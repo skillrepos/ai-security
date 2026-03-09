@@ -2,7 +2,7 @@
 ## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting
 
 ## Session labs 
-## Revision 4.5 - 03/08/26
+## Revision 4.6 - 03/08/26
 
 ## How to Use These Labs
 
@@ -24,7 +24,7 @@ Labs 5-6 are designed to be done in the codespace environment. **Setup:** Follow
 
 <br>
 
-## Lab 1: Strengthen Weak Prompts (10 minutes)
+## Lab 1: Creating Strong Prompts 
 
 **Goal**: Apply the 6 building blocks (Task, Context, Role, Format, Examples, Constraints) to transform vague prompts into structured, measurable ones.
 
@@ -144,7 +144,7 @@ This is measuring **consistency** — a key quality metric.
 
 <br>
 
-## Lab 2: Few-Shot & Chain of Thought Comparison (12 minutes)
+## Lab 2: Few-Shot & Chain of Thought Comparison 
 
 **Goal**: Compare zero-shot, few-shot, and Chain of Thought (CoT) prompting on a classification task where the "correct" answer depends on company-specific rules that the AI can't infer on its own.
 
@@ -337,7 +337,7 @@ Key takeaway: CoT improves *how* the AI reasons but can't teach it rules it does
 
 <br>
 
-## Lab 3: Production Prompt Engineering (12 minutes)
+## Lab 3: Production Prompt Engineering 
 
 **Goal**: Build a structured, constrained prompt that produces consistent, machine-parseable JSON output suitable for feeding into a real system.
 
@@ -496,7 +496,7 @@ Notice the refinement: "For trivial fixes, 1 sentence is acceptable" — that's 
 
 <br>
 
-## Lab 4: Multi-Expert & Reverse Prompting (12 minutes)
+## Lab 4: Multi-Expert & Reverse Prompting 
 
 **Goal**: Use multi-expert prompting to get diverse perspectives on a complex decision, then use reverse prompting to discover hidden requirements.
 
@@ -766,7 +766,7 @@ These are the same prompt engineering concepts from Labs 1-4 (role, constraints,
 
 <br>
 
-## Lab 6: Prompting via MCP (12 minutes)
+## Lab 6: Working with Prompts in MCP
 
 **Goal**: Learn how MCP (Model Context Protocol) separates prompt design from agent code — so you can update prompts on a server without touching the agents that use them.
 
