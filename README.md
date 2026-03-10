@@ -1,6 +1,6 @@
-# Prompt Engineering Accelerator for AI
+# AI Security for Developers and Practitioners
 
-## Mastering the Techniques, Patterns, and Strategies Behind High-Performance AI Prompting ##
+## Building safe, trustworthy, and resilient AI systems ##
 
 These instructions will guide you through configuring a GitHub Codespaces environment that you can use to do the labs. 
 
@@ -11,7 +11,7 @@ To do this, when logged in to GitHub, go to https://github.com/settings/codespac
 
 **2. Click on the button below to start a new codespace from this repository.**
 
-Click here ➡️  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/skillrepos/prompt-accel?quickstart=1)
+Click here ➡️  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/skillrepos/ai-security?quickstart=1)
 
 **3. Then click on the option to create a new codespace.**
 
