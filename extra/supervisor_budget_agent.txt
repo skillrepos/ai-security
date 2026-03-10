@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""
+Supervisor Multi-Agent Pattern with Budgets
+
+A tight, lab-friendly example:
+	•	Supervisor routes between Planner -> Implementer -> Reviewer
+	•	Budgets enforced:
+	•	max turns per agent
+	•	approximate token budget per agent (heuristic: ~4 chars/token)
+	•	“Handoff packet” prevents sending full transcripts across agents
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Literal, Optional, Tuple
+
+from langchain_ollama import ChatOllama
+from langchain_core.messages import SystemMessage, HumanMessage
+
+Role = Literal["planner", "implementer", "reviewer"]
+
+def approx_tokens(text: str) -> int:
+# Simple heuristic: 1 token ≈ 4 chars (good enough for budgeting demos)
+  return max(1, len(text) // 4)
+
+@dataclass
+class Budget:
+    max_turns: int
+    max_tokens_out: int
+    turns_used: int = 0
+    tokens_out_used: int = 0
+
+    def can_run(self) -> bool:
+        return self.turns_used < self.max_turns and self.tokens_out_used < self.max_tokens_out
+
+    def record(self, output_text: str) -> None:
+        self.turns_used += 1
+        self.tokens_out_used += approx_tokens(output_text)
+	
+@dataclass
+class HandoffPacket:
+    """
+    The ONLY thing that gets passed between agents.
+    This is intentionally compact: enterprise workflows should avoid dumping full transcripts.
+    """
+    user_goal: str
+    plan: str = ""
+    implementation: str = ""
+    review: str = ""
+    notes: List[str] = field(default_factory=list)
+
+class Agent:
+    def __init__(self, role: Role, llm: ChatOllama, system_prompt: str):
+        self.role = role
+        self.llm = llm
+        self.system_prompt = system_prompt
+
+    def run(self, packet: HandoffPacket, instruction: str, max_output_chars: int = 2000) -> str:
+        """
+        Generates a response with a hard character cap (additional control in lab settings).
+        Reduced to 2000 chars (~500 tokens) for faster execution.
+        """
+        messages = [
+            SystemMessage(content=self.system_prompt),
+            HumanMessage(content=self._format_input(packet, instruction)),
+        ]
+        resp = self.llm.invoke(messages)
+        text = (resp.content or "").strip()
+        if len(text) > max_output_chars:
+            text = text[:max_output_chars].rstrip() + "\n[TRUNCATED BY BUDGET]"
+        return text
+
+    def _format_input(self, packet: HandoffPacket, instruction: str) -> str:
+        # Keep inputs compact and structured (handoff packet)
+        return (
+            f"USER_GOAL:\n{packet.user_goal}\n\n"
+            f"CURRENT_PACKET:\n"
+            f"- plan: {packet.plan or '(empty)'}\n"
+            f"- implementation: {packet.implementation or '(empty)'}\n"
+            f"- review: {packet.review or '(empty)'}\n"
+            f"- notes: {packet.notes[-3:] if packet.notes else '(none)'}\n\n"
+            f"INSTRUCTION:\n{instruction}\n"
+        )
+
+class Supervisor:
+    """
+    Routes between agents and enforces budgets.
+    """
+    def __init__(
+        self,
+        planner: Agent,
+        implementer: Agent,
+        reviewer: Agent,
+        budgets: Dict[Role, Budget],
+    ):
+        self.planner = planner
+        self.implementer = implementer
+        self.reviewer = reviewer
+        self.budgets = budgets
+
+    def run(self, user_goal: str) -> HandoffPacket:
+        # Reset budgets at the start of each request
+        for budget in self.budgets.values():
+            budget.turns_used = 0
+            budget.tokens_out_used = 0
+        
+        packet = HandoffPacket(user_goal=user_goal)
+        print("\n=== SUPERVISOR: START ===")
+        print(f"Goal: {user_goal}\n")
+
+        # Step 1: Plan
+        self._call_agent(
+            agent=self.planner,
+            role="planner",
+            packet=packet,
+            instruction=(
+                "Create a tight plan with 3-6 steps. "
+                "Be concrete. No long explanations."
+            ),
+            save_to="plan",
+        )
+
+        # Step 2: Implement
+        self._call_agent(
+            agent=self.implementer,
+            role="implementer",
+            packet=packet,
+            instruction=(
+                "Produce the implementation artifact based on the plan. "
+                "Keep it short and structured (bullets or numbered list)."
+            ),
+            save_to="implementation",
+        )
+
+        # Step 3: Review-implement loop (continue until approved or budget exhausted)
+        self._call_agent(
+            agent=self.reviewer,
+            role="reviewer",
+            packet=packet,
+            instruction=(
+                "Review the implementation. If there are issues, provide a short list of fixes. "
+                "If it's acceptable, say 'APPROVED' and list 1-3 key strengths."
+            ),
+            save_to="review",
+        )
+
+        # Polish loop: iterate between implementer and reviewer until approved or budgets exhausted
+        iteration = 1
+        while "FIXES NEEDED" in packet.review.upper() or "APPROVED" not in packet.review.upper():
+            impl_budget = self.budgets["implementer"]
+            rev_budget = self.budgets["reviewer"]
+            
+            if not impl_budget.can_run():
+                reason = []
+                if impl_budget.turns_used >= impl_budget.max_turns:
+                    reason.append(f"turn limit {impl_budget.turns_used}/{impl_budget.max_turns}")
+                if impl_budget.tokens_out_used >= impl_budget.max_tokens_out:
+                    reason.append(f"token limit {impl_budget.tokens_out_used}/{impl_budget.max_tokens_out}")
+                packet.notes.append(
+                    f"Supervisor: Implementer stopped - {' and '.join(reason)} reached."
+                )
+                break
+            
+            if not rev_budget.can_run():
+                reason = []
+                if rev_budget.turns_used >= rev_budget.max_turns:
+                    reason.append(f"turn limit {rev_budget.turns_used}/{rev_budget.max_turns}")
+                if rev_budget.tokens_out_used >= rev_budget.max_tokens_out:
+                    reason.append(f"token limit {rev_budget.tokens_out_used}/{rev_budget.max_tokens_out}")
+                packet.notes.append(
+                    f"Supervisor: Reviewer stopped - {' and '.join(reason)} reached."
+                )
+                break
+            
+            iteration += 1
+            packet.notes.append(f"Supervisor: Polish iteration {iteration}. Reviewer requested fixes.")
+            
+            self._call_agent(
+                agent=self.implementer,
+                role="implementer",
+                packet=packet,
+                instruction=(
+                    "Apply the review fixes. Produce a revised implementation artifact. "
+                    "Keep it compact."
+                ),
+                save_to="implementation",
+            )
+        
+            if self.budgets["reviewer"].can_run():
+                self._call_agent(
+                    agent=self.reviewer,
+                    role="reviewer",
+                    packet=packet,
+                    instruction="Re-review the revised implementation. If acceptable, say 'APPROVED'.",
+                    save_to="review",
+                )
+            else:
+                packet.notes.append("Supervisor: Reviewer budget exhausted. Cannot re-review.")
+                break
+
+        print("\n=== SUPERVISOR: END ===")
+        
+        # Display any supervisor notes (budget warnings, etc.)
+        if packet.notes:
+            print("\n=== SUPERVISOR NOTES ===")
+            for note in packet.notes:
+                print(f"  • {note}")
+            print("========================")
+        
+        self._print_budget_summary()
+        return packet
+
+    def _call_agent(
+        self,
+        agent: Agent,
+        role: Role,
+        packet: HandoffPacket,
+        instruction: str,
+        save_to: Literal["plan", "implementation", "review"],
+    ) -> None:
+        budget = self.budgets[role]
+        if not budget.can_run():
+            packet.notes.append(f"Supervisor: Budget exhausted for {role}. Skipping.")
+            print(f"[SUPERVISOR] Budget exhausted for {role}. Skipping.")
+            return
+
+        print(f"[SUPERVISOR] Calling {role.upper()} (turn {budget.turns_used + 1}/{budget.max_turns})...")
+        output = agent.run(packet, instruction, max_output_chars=2000)
+        budget.record(output)
+
+        # Check if this output exceeded the budget
+        if budget.tokens_out_used > budget.max_tokens_out:
+            warning = (
+                f"⚠️  {role.upper()} EXCEEDED TOKEN BUDGET: "
+                f"{budget.tokens_out_used}/{budget.max_tokens_out} tokens used"
+            )
+            packet.notes.append(f"Supervisor: {role} exceeded token budget.")
+            print(f"\n{warning}\n")
+
+        setattr(packet, save_to, output)
+        print(f"\n--- {role.upper()} OUTPUT ---")
+        print(output)
+        print("--- END OUTPUT ---\n")
+
+    def _print_budget_summary(self) -> None:
+        print("\n=== BUDGET SUMMARY ===")
+        for role, b in self.budgets.items():
+            print(
+                f"{role:12} turns={b.turns_used}/{b.max_turns} "
+                f"tokens_out~={b.tokens_out_used}/{b.max_tokens_out}"
+            )
+        print("======================\n")
+
+def main() -> None:
+    # Local model via Ollama (consistent with other labs)
+    # num_predict limits output tokens for faster generation
+    llm = ChatOllama(model="llama3.2:1b", temperature=0, num_predict=400)
+
+    planner = Agent(
+        role="planner",
+        llm=llm,
+        system_prompt=(
+            "You are the Planner agent. Produce concise plans with concrete steps. "
+            "Do not write long explanations."
+        ),
+    )
+    implementer = Agent(
+        role="implementer",
+        llm=llm,
+        system_prompt=(
+            "You are the Implementer agent. Convert a plan into a compact, practical artifact. "
+            "Be specific and structured."
+        ),
+    )
+    reviewer = Agent(
+        role="reviewer",
+        llm=llm,
+        system_prompt=(
+            "You are the Reviewer agent. Be VERY strict and thorough. "
+            "For complex requests or requests asking for perfection/comprehensiveness, "
+            "always find issues that need improvement. "
+            "For simple, focused requests that are well-executed, you may approve immediately. "
+            "\n\nRESPONSE FORMAT:\n"
+            "- If work needs fixes: Start with 'FIXES NEEDED' then list specific improvements\n"
+            "- If work is acceptable: Start with 'APPROVED' then list 1-3 key strengths\n"
+            "\nNEVER use both FIXES NEEDED and APPROVED in the same response."
+        ),
+    )
+
+    # Tighter budgets to demonstrate cutoffs and ensure faster execution:
+    # - Lower token limits to make budget exhaustion more visible
+    # - Reduce max_turns for faster iteration loops
+    budgets: Dict[Role, Budget] = {
+        "planner": Budget(max_turns=1, max_tokens_out=500),
+        "implementer": Budget(max_turns=3, max_tokens_out=2000),
+        "reviewer": Budget(max_turns=5, max_tokens_out=2000),
+    }
+
+    supervisor = Supervisor(planner, implementer, reviewer, budgets)
+
+    print("Supervisor Multi-Agent with Budgets")
+    print("Type a request and press Enter. Type 'exit' to quit.\n")
+
+    while True:
+        goal = input("Request > ").strip()
+        if not goal or goal.lower() == "exit":
+            break
+        _ = supervisor.run(goal)
+
+    print("\nDone.")
+
+if __name__ == "__main__":
+    main()
