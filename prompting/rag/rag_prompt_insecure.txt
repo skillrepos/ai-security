@@ -1,7 +1,0 @@
-Answer the question using the context.
-
-Context:
-{{CONTEXT}}
-
-Question:
-{{QUESTION}}

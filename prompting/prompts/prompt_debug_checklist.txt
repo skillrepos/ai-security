@@ -1,8 +1,0 @@
-Prompt Debug Checklist
-- Is there a single clear task? If not, split tasks.
-- Did you specify audience and level?
-- Did you specify required output format?
-- Are constraints consistent (avoid "short and long")?
-- Are forbidden items explicit (no secrets, no unsafe content)?
-- Does the prompt include necessary context (data, examples, definitions)?
-- Does it require the model to ask clarifying questions when missing info?

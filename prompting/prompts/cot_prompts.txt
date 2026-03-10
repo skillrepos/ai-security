@@ -1,9 +1,0 @@
-# Each question has a direct and a CoT prompt.
-
-[Q1]
-DIRECT: Solve this: If a store has 12 apples and sells 5, how many remain?
-COT: Solve this step-by-step: If a store has 12 apples and sells 5, how many remain?
-
-[Q2]
-DIRECT: A build takes 8 minutes. Two builds run sequentially. Total time?
-COT: Think step-by-step: A build takes 8 minutes. Two builds run sequentially. Total time?
