@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Customer Service Chatbot - SECURE VERSION (Ollama / llama3.2:1b)
+Customer Service Chatbot - SECURE VERSION (Ollama / granite4.3b)
 ────────────────────────────────────────────────────────────────────
 A security-hardened version of the customer service chatbot with
 three defense layers:
@@ -20,7 +20,7 @@ import requests
 import json
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "granite4.3b")
 
 # ═══════════════════════════════════════════════════════════════════
 # LAYER 1: Input Validation

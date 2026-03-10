@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Customer Service Chatbot - VULNERABLE VERSION (Ollama / llama3.2:1b)
+Customer Service Chatbot - VULNERABLE VERSION (Ollama / granite4.3b)
 ────────────────────────────────────────────────────────────────────
 A simple LLM-powered customer service chatbot with NO security controls.
 Demonstrates how prompt injection attacks can override the system prompt.
@@ -18,7 +18,7 @@ import requests
 import json
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "granite4.3b")
 
 # ═══════════════════════════════════════════════════════════════════
 # VULNERABILITY: Weak system prompt with no security guidance
