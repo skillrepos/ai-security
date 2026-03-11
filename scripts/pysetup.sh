@@ -13,3 +13,6 @@ if [ -f "./requirements.txt" ]; then
 else
   pip3 install -r "/workspaces/ai-3in1/requirements/requirements.txt"
 fi
+# Remove NVIDIA CUDA packages to save disk space (no GPU in Codespace)
+pip uninstall -y nvidia-cublas-cu12 nvidia-cuda-cupti-cu12 nvidia-cuda-nvrtc-cu12 nvidia-cuda-runtime-cu12 nvidia-cufft-cu12 nvidia-cufile-cu12 nvidia-curand-cu12 nvidia-cusparse-cu12 nvidia-cusparselt-cu12 nvidia-nccl-cu12 nvidia-nvjitlink-cu12 nvidia-nvshmem-cu12 nvidia-nvtx-cu12 2>/dev/null || true
+
