@@ -54,7 +54,7 @@ done
 if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
   echo "ERROR: ollama server did not start. Log:"
   tail -n 200 /tmp/ollama-serve.log || true
-  kill "$pid" >/dev/null 2>&1 || true
+#  kill "$pid" >/dev/null 2>&1 || true
   exit 1
 fi
 
