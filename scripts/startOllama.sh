@@ -59,5 +59,5 @@ if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
 fi
 
 # ---- Stop server ----
-kill "$pid" >/dev/null 2>&1 || true
-wait "$pid" 2>/dev/null || true
+# kill "$pid" >/dev/null 2>&1 || true
+# wait "$pid" 2>/dev/null || true
