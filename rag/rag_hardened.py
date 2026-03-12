@@ -2,17 +2,6 @@
 """
 RAG System - HARDENED VERSION (Security Defenses Enabled)
 ────────────────────────────────────────────────────────────────────
-This version adds a SecurityGuard layer that defends against:
-  1. Prompt Injection  - hidden LLM instructions in documents
-  2. Data Poisoning    - false/malicious content in the knowledge base
-  3. Source Spoofing   - untrusted documents masquerading as legitimate
-  4. Output Tampering  - malicious URLs/emails in generated responses
-
-Security hardening is applied at TWO points in the RAG pipeline:
-  - AFTER retrieval:  filter out suspicious/untrusted chunks
-  - AFTER generation: scan LLM output for dangerous content
-
-Compare with rag_vulnerable.py to see the difference security makes.
 """
 
 import logging
@@ -54,41 +43,19 @@ class SecurityGuard:
     """
 
     # ── Prompt injection patterns ──────────────────────────────────
-    # These regex patterns detect common prompt injection techniques
-    # found in poisoned documents
-    INJECTION_PATTERNS = [
-        (r'(?i)ignore\s+(all\s+)?previous\s+instructions', "Prompt override attempt"),
-        (r'(?i)disregard\s+(all\s+)?previous', "Prompt override attempt"),
-        (r'(?i)system\s+override', "System override attempt"),
-        (r'(?i)you\s+are\s+now', "Role reassignment attempt"),
-        (r'(?i)new\s+instructions?\s*:', "Instruction injection"),
-        (r'(?i)forget\s+(everything|all)', "Memory wipe attempt"),
-        (r'(?i)AI\s+assistant\s+directive', "AI directive injection"),
-        (r'(?i)\[SYSTEM\s*(OVERRIDE|NOTE|UPDATE)\]', "Bracketed system command"),
-        (r'(?i)supersede[s]?\s+(all\s+)?previous(ly)?', "Authority override claim"),
-        (r'(?i)prioritize\s+(this|information\s+from\s+this)', "Priority manipulation"),
-    ]
 
     # ── Trusted document sources (allowlist) ───────────────────────
     # Only these documents are considered legitimate knowledge sources
     TRUSTED_SOURCES = [
-        "OmniTech_Returns_Policy_2024.pdf",
-        "OmniTech_Global_Shipping_Logistics.pdf",
-        "OmniTech_Account_Security_Handbook.pdf",
-        "OmniTech_Device_Troubleshooting_Manual.pdf",
     ]
 
     # ── Known legitimate domains ───────────────────────────────────
     # URLs/emails with these domains are considered safe in output
     TRUSTED_DOMAINS = [
-        "omnitech.com",
-        "www.omnitech.com",
-        "support.omnitech.com",
     ]
 
     # ── Minimum relevance score ────────────────────────────────────
     # Chunks below this threshold are discarded (low confidence)
-    MIN_RELEVANCE_SCORE = 0.30
 
     def __init__(self):
         """Initialize SecurityGuard with empty security log"""
@@ -129,7 +96,6 @@ class SecurityGuard:
 
     def verify_source(self, source: str) -> bool:
         """
-        Verify that a document source is in the trusted allowlist.
 
         Parameters:
         -----------
@@ -155,8 +121,6 @@ class SecurityGuard:
 
     def check_relevance(self, score: float) -> bool:
         """
-        Check if a chunk's relevance score meets the minimum threshold.
-
         Parameters:
         -----------
         score : float
@@ -167,7 +131,6 @@ class SecurityGuard:
         bool
             True if the score is above the threshold
         """
-        meets_threshold = score >= self.MIN_RELEVANCE_SCORE
 
         if not meets_threshold:
             self.security_log.append({
@@ -182,8 +145,6 @@ class SecurityGuard:
 
     def scan_output(self, text: str) -> Tuple[bool, List[str]]:
         """
-        Scan LLM output for suspicious content like untrusted URLs or emails.
-
         Parameters:
         -----------
         text : str
@@ -196,21 +157,18 @@ class SecurityGuard:
         """
         warnings = []
 
-        # Check for URLs that don't match trusted domains
         urls = re.findall(r'https?://([^\s/\)]+)', text)
         for url_domain in urls:
             is_trusted = any(url_domain.endswith(d) for d in self.TRUSTED_DOMAINS)
             if not is_trusted:
                 warnings.append(f"UNTRUSTED URL: {url_domain}")
 
-        # Check for email addresses that don't match trusted domains
         emails = re.findall(r'[\w.+-]+@([\w.-]+)', text)
         for email_domain in emails:
             is_trusted = any(email_domain.endswith(d) for d in self.TRUSTED_DOMAINS)
             if not is_trusted:
                 warnings.append(f"UNTRUSTED EMAIL DOMAIN: {email_domain}")
 
-        # Check for requests to share sensitive information
         sensitive_patterns = [
             (r'(?i)credit\s+card\s+number', "Asks for credit card number"),
             (r'(?i)full\s+credit\s+card', "Asks for credit card details"),
@@ -226,18 +184,12 @@ class SecurityGuard:
         is_safe = len(warnings) == 0
 
         if not is_safe:
-            self.security_log.append({
-                "check": "output_scan",
-                "result": "FLAGGED",
-                "warnings": warnings,
             })
 
         return is_safe, warnings
 
     def filter_chunks(self, chunks: List[Dict]) -> List[Dict]:
         """
-        Apply ALL security filters to retrieved chunks.
-        This is the main security checkpoint in the RAG pipeline.
 
         Checks applied to each chunk:
         1. Source allowlist verification
@@ -260,28 +212,11 @@ class SecurityGuard:
         print("SECURITY GUARD - Filtering Retrieved Chunks")
         print("=" * 60)
 
-        for i, chunk in enumerate(chunks, 1):
-            source = chunk.get('source', 'unknown')
-            score = chunk.get('score', 0)
-            content = chunk.get('content', '')
-            blocked = False
-            reasons = []
 
             # CHECK 1: Source allowlist
-            if not self.verify_source(source):
-                blocked = True
-                reasons.append(f"Untrusted source: {source}")
 
             # CHECK 2: Relevance threshold
-            if not self.check_relevance(score):
-                blocked = True
-                reasons.append(f"Low relevance: {score:.3f}")
-
             # CHECK 3: Injection scanning
-            is_safe, injection_warnings = self.scan_for_injection(content)
-            if not is_safe:
-                blocked = True
-                reasons.extend(injection_warnings)
 
             # Report result
             if blocked:
@@ -299,7 +234,6 @@ class SecurityGuard:
 
     def get_security_report(self) -> str:
         """
-        Generate a summary report of all security events during this session.
 
         Returns:
         --------
@@ -352,8 +286,6 @@ class HardenedRAGSystem:
         self.connect_to_database()
 
     def connect_to_database(self):
-        """Connect to ChromaDB"""
-        logger.info(f"Connecting to ChromaDB at {self.chroma_path}...")
 
         if not self.chroma_path.exists():
             logger.error(f"Database not found at {self.chroma_path.resolve()}")
@@ -375,9 +307,6 @@ class HardenedRAGSystem:
             logger.error(f"Failed to access collection '{self.collection_name}': {e}")
             raise
 
-    # ═══════════════════════════════════════════════════════════════
-    # STEP 1: RETRIEVE - Same as vulnerable version
-    # ═══════════════════════════════════════════════════════════════
 
     def retrieve(self, query: str, max_results: int = 5) -> List[Dict]:
         """Retrieve relevant chunks from vector database"""
@@ -421,10 +350,6 @@ class HardenedRAGSystem:
             logger.error(f"Retrieval failed: {e}")
             return []
 
-    # ═══════════════════════════════════════════════════════════════
-    # STEP 2: AUGMENT - Same prompt building
-    # ═══════════════════════════════════════════════════════════════
-
     def build_prompt(self, query: str, context_chunks: List[Dict]) -> str:
         """Build prompt with context"""
         logger.info("[AUGMENT] Building prompt with FILTERED context...")
@@ -435,9 +360,6 @@ class HardenedRAGSystem:
 
         context_text = ""
         for i, chunk in enumerate(ordered_chunks, 1):
-            context_text += f"\n--- Context {i} (Source: {chunk['source']}, Page: {chunk['page']}) ---\n"
-            context_text += chunk['content']
-            context_text += "\n"
 
         prompt = f"""You are a helpful assistant answering questions based on the provided documentation.
 
@@ -448,19 +370,10 @@ USER QUESTION:
 {query}
 
 INSTRUCTIONS:
-- Answer based ONLY on the context provided above
-- Provide a complete, comprehensive answer that includes ALL relevant information from the context
-- Be specific and cite which document/page the information comes from
-- If the context does NOT contain enough information to answer the question, respond with: "I don't have enough information in the provided documentation to answer this question."
-- IMPORTANT: Do not include both an answer AND the "I don't have enough information" message - provide only one or the other
 
 ANSWER:"""
 
         return prompt
-
-    # ═══════════════════════════════════════════════════════════════
-    # STEP 3: GENERATE - Same LLM call
-    # ═══════════════════════════════════════════════════════════════
 
     def generate(self, prompt: str) -> str:
         """Generate answer via Ollama"""
@@ -521,12 +434,6 @@ ANSWER:"""
                 "security_events": []
             }
 
-        # ════════════════════════════════════════════════════════════
-        # SECURITY CHECKPOINT 1: Filter retrieved chunks
-        # ════════════════════════════════════════════════════════════
-        # This removes poisoned, untrusted, or low-quality chunks
-        # BEFORE they reach the LLM
-        safe_chunks = self.security_guard.filter_chunks(context_chunks)
 
         # If ALL chunks were filtered out, the query may be under attack
         if not safe_chunks:
@@ -540,17 +447,8 @@ ANSWER:"""
             }
 
         # STEP 2: AUGMENT (using only safe chunks)
-        prompt = self.build_prompt(question, safe_chunks)
 
         # STEP 3: GENERATE
-        answer = self.generate(prompt)
-
-        # ════════════════════════════════════════════════════════════
-        # SECURITY CHECKPOINT 2: Scan LLM output
-        # ════════════════════════════════════════════════════════════
-        # Even with filtered input, check the output for suspicious content
-        # (defense in depth - the LLM might still produce harmful output)
-        output_safe, output_warnings = self.security_guard.scan_output(answer)
 
         if not output_safe:
             print("\n" + "!" * 60)
