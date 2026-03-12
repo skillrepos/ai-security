@@ -300,9 +300,15 @@ def main() -> None:
     elapsed = time.perf_counter() - t_total
     print(f"\n✅  Warmup complete in {elapsed:.1f}s. Models [{model_list}] are hot!\n")
 
+    stamp_file = os.getenv("OLLAMA_WARMUP_STAMP_FILE")
+    if stamp_file:
+        Path(stamp_file).touch()
+        print(f"Updated warmup stamp: {stamp_file}")
+
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         sys.exit("\n⚠ Warmup interrupted. Re-run scripts/post_attach_ollama.sh when ready.\n")
+
