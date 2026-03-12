@@ -57,9 +57,4 @@ if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
 #  kill "$pid" >/dev/null 2>&1 || true
   exit 1
 fi
-ollama pull granite4:3b
-
-
-# ---- Stop server ----
-# kill "$pid" >/dev/null 2>&1 || true
-# wait "$pid" 2>/dev/null || true
+# Model pulls and warmup are handled by scripts/warmup.py

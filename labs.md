@@ -237,7 +237,7 @@ python supervisor_budget_agent.py
 Create a very short, enterprise-friendly incident response runbook for "API latency spike". Keep it simple.
 ```
 
-![initial request](./images/ae138.png?raw=true "initial request") 
+![initial request](./images/ai-sec14.png?raw=true "initial request")
 
 <br><br>
 
@@ -247,7 +247,7 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 - Supervisor calls **Reviewer** multiple times
 - If the reviewer does not approve and budgets allow, the supervisor permits **repair passes** and **re-reviews**
 
-![initial output](./images/ae141.png?raw=true "initial output") 
+![initial output](./images/ai-sec12.png?raw=true "initial output")
 
 <br><br>
 
@@ -255,7 +255,7 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 - a **max turns** cap
 - an **approx token** cap
 
-![budget summary](./images/ae142.png?raw=true "budget summary") 
+![budget summary](./images/ai-sec13.png?raw=true "budget summary") 
 
 <br><br>
 
@@ -279,7 +279,7 @@ Write a perfect version of the runbook and keep improving it until it is flawles
 
 9. You will probably see that the planner hit the token budget quickly. And several other thresholds were hit. Observe that the supervisor still stops after a bounded number of turns. This is the point: in enterprise settings, you must prevent open-ended coordination loops.
 
-![limits reached](./images/ae145.png?raw=true "limits reached") 
+![limits reached](./images/ai-sec15.png?raw=true "limits reached") 
 
 <br><br>
 
