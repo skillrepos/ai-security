@@ -536,12 +536,12 @@ code -d ../extra/secure_client_solution.txt secure_client.py
 python auth_server.py
 ```
 
-![running auth server](./images/ae121.png?raw=true "running auth server") 
+![running auth server](./images/ai-sec33.png?raw=true "running auth server")
 
 <br><br>
 
 
-6. Open a **new terminal** (click the "+" above the terminal panel). You should be in the *mcp* directory. Get a token for `full-client` and save it:
+6. Open a **new terminal** (click the "+" above the terminal panel). You should be in the *mcp* directory. Get a token for `full-client` and save it by running the commands below in that terminal:
 
 ```
 cd mcp
@@ -567,7 +567,7 @@ curl -s -X POST http://127.0.0.1:9000/introspect \
 
    You should see `"scope": "tools:add tools:multiply tools:divide"` in the response.
 
-![looking at token](./images/ae122.png?raw=true "looking at token") 
+![looking at token](./images/ai-sec34.png?raw=true "looking at token") 
 
 <br><br>
 
@@ -578,12 +578,12 @@ curl -s -X POST http://127.0.0.1:9000/introspect \
 python secure_server.py
 ```
 
-![running secure server](./images/ae123.png?raw=true "running secure server") 
+![running secure server](./images/ai-sec35.png?raw=true "running secure server")
 
 <br><br>
 
 
-8. Open **another new terminal**. First, verify that unauthenticated requests are rejected:
+8. Open **another new terminal**. First, verify that unauthenticated requests are rejected by running the commands in the new terminal:
 
 ```
 cd mcp
@@ -595,12 +595,12 @@ curl -i -X POST http://127.0.0.1:8000/mcp \
 
    You should see a `401` response with `"Missing token"`.
 
-![not authorized](./images/ae124.png?raw=true "not authorized") 
+![not authorized](./images/ai-sec36.png?raw=true "not authorized")
 
 <br><br>
 
 
-9. Now run the **secure client** to see scope enforcement in action:
+9. Now, in the same terminal, run the **secure client** to see scope enforcement in action:
 
 ```
 python secure_client.py
@@ -612,7 +612,7 @@ python secure_client.py
 
    This demonstrates per-tool authorization – the same server, different access levels based on token scopes.
 
-![not authorized](./images/ae126.png?raw=true "not authorized") 
+![not authorized](./images/ai-sec37.png?raw=true "not authorized")
 
 <br><br>
 
