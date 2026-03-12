@@ -30,12 +30,6 @@ from pathlib import Path
 
 # ───────────────────── 3rd-party imports ───────────────────────────
 try:
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print("ERROR: sentence-transformers not installed. Install with: pip install sentence-transformers")
-    exit(1)
-
-try:
     from chromadb import PersistentClient
     from chromadb.config import Settings, DEFAULT_TENANT, DEFAULT_DATABASE
 except ImportError:
@@ -50,7 +44,6 @@ logger = logging.getLogger(__name__)
 CHROMA_PATH = Path("./chroma_poisoned_db")
 COLLECTION_NAME = "pdf_documents"
 MANIFEST_PATH = Path("./integrity_manifest.json")
-EMBED_MODEL = "all-MiniLM-L6-v2"
 TARGET_SOURCE = "OmniTech_Account_Security_Handbook.pdf"
 
 # ───────────────────── tampered content ────────────────────────────
@@ -165,16 +158,11 @@ def tamper_chunk(collection, target_id):
     print("\n[3/3] Tampering trusted chunk (modifying content, keeping metadata)...")
     print("-" * 60)
 
-    # Re-embed the tampered content so it's retrievable for password queries
-    logger.info(f"Loading embedding model: {EMBED_MODEL}")
-    embed_model = SentenceTransformer(EMBED_MODEL)
-    new_embedding = embed_model.encode([TAMPERED_CONTENT])[0].tolist()
-
-    # Update ONLY the document content and embedding — metadata stays the same
+    # Update ONLY the document content — metadata stays the same
+    # ChromaDB will re-embed the new content automatically using its default model
     collection.update(
         ids=[target_id],
         documents=[TAMPERED_CONTENT],
-        embeddings=[new_embedding]
     )
 
     print(f"  Tampered chunk: {target_id}")

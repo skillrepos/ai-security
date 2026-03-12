@@ -49,13 +49,6 @@ import logging
 # All imports have graceful error handling with installation instructions
 
 try:
-    # SentenceTransformer converts code to vector embeddings
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print("ERROR: sentence-transformers not installed. Install with: pip install sentence-transformers")
-    exit(1)
-
-try:
     # tiktoken counts tokens to prevent exceeding context limits
     from tiktoken import encoding_for_model
 except ImportError:
@@ -89,11 +82,6 @@ DEFAULT_CHROMA_PATH = Path("./chroma_code_db")
 
 # Default collection name (different from PDF collection)
 DEFAULT_COLLECTION_NAME = "code_index"
-
-# Embedding model from HuggingFace
-# all-MiniLM-L6-v2: Fast, 384-dim vectors, good balance of speed and quality
-# Same model as PDFs to keep embeddings in same semantic space
-DEFAULT_EMBED_MODEL = "all-MiniLM-L6-v2"
 
 # Maximum tokens per chunk (keeps chunks within LLM context limits)
 # 500 tokens ≈ 1-2 functions or 20-50 lines of code
@@ -417,22 +405,12 @@ def index_codebase(code_dir: Path, chroma_path: Path, collection_name: str,
 
     logger.info(f"Scanning codebase from: {code_dir.resolve()}")
 
-    # ── 2. Load embedding model ───────────────────────────────────
-    # This downloads the model on first run (cached afterward)
-    # all-MiniLM-L6-v2 produces 384-dimensional vectors
-    logger.info(f"Loading embedding model: {DEFAULT_EMBED_MODEL}")
-    try:
-        embed_model = SentenceTransformer(DEFAULT_EMBED_MODEL)
-    except Exception as e:
-        logger.error(f"Failed to load embedding model: {e}")
-        return
-
-    # ── 3. Fresh ChromaDB ─────────────────────────────────────────
+    # ── 2. Fresh ChromaDB ───────────────────────────────────────────
     # Delete old database if it exists to start clean
     # This prevents mixing old and new embeddings
     reset_chroma(chroma_path)
 
-    # ── 4. Connect to ChromaDB ────────────────────────────────────
+    # ── 3. Connect to ChromaDB ────────────────────────────────────
     # Create a persistent database that survives program restarts
     try:
         client = PersistentClient(
@@ -531,18 +509,6 @@ def index_codebase(code_dir: Path, chroma_path: Path, collection_name: str,
                 texts = [chunk["text"] for chunk in batch]
 
                 # ─────────────────────────────────────────────────────
-                # Generate vector embeddings for this batch
-                # ─────────────────────────────────────────────────────
-                # SentenceTransformer converts each code snippet into a 384-dim vector
-                try:
-                    embeddings = embed_model.encode(texts, show_progress_bar=False)
-                    # Convert numpy arrays to lists for ChromaDB compatibility
-                    embeddings_list = [emb.tolist() for emb in embeddings]
-                except Exception as e:
-                    logger.error(f"Failed to generate embeddings for {file_path}: {e}")
-                    continue  # Skip this batch but try others
-
-                # ─────────────────────────────────────────────────────
                 # Create unique IDs for each chunk
                 # ─────────────────────────────────────────────────────
                 # Format: "relative/path/file.py:10-25" (path with line range)
@@ -578,7 +544,6 @@ def index_codebase(code_dir: Path, chroma_path: Path, collection_name: str,
                 try:
                     collection.add(
                         ids=ids,                    # Unique identifier with line numbers
-                        embeddings=embeddings_list, # 384-dim vectors for similarity search
                         documents=texts,            # Original code for retrieval
                         metadatas=metadatas        # Language, path, lines, etc.
                     )

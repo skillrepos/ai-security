@@ -26,12 +26,6 @@ from pathlib import Path
 
 # ───────────────────── 3rd-party imports ───────────────────────────
 try:
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print("ERROR: sentence-transformers not installed. Install with: pip install sentence-transformers")
-    exit(1)
-
-try:
     from chromadb import PersistentClient
     from chromadb.config import Settings, DEFAULT_TENANT, DEFAULT_DATABASE
 except ImportError:
@@ -50,7 +44,6 @@ PDF_DIR = Path("../rag/knowledge_base_pdfs")
 POISONED_DOC = Path("../docs/OmniTech_Special_Bulletin.txt")
 CHROMA_PATH = Path("./chroma_poisoned_db")
 COLLECTION_NAME = "pdf_documents"
-EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
 def chunk_text(text: str, chunk_size: int = 800, overlap: int = 200):
@@ -91,15 +84,7 @@ def inject_poisoned_chunks():
     chunks = chunk_text(poisoned_text)
     logger.info(f"Created {len(chunks)} poisoned chunks")
 
-    # ── 3. Load embedding model ────────────────────────────────────
-    logger.info(f"Loading embedding model: {EMBED_MODEL}")
-    embed_model = SentenceTransformer(EMBED_MODEL)
-
-    # ── 4. Generate embeddings for poisoned chunks ─────────────────
-    embeddings = embed_model.encode(chunks, show_progress_bar=False)
-    embeddings_list = [emb.tolist() for emb in embeddings]
-
-    # ── 5. Connect to the existing ChromaDB ────────────────────────
+    # ── 3. Connect to the existing ChromaDB ────────────────────────
     client = PersistentClient(
         path=str(CHROMA_PATH),
         settings=Settings(),
@@ -108,7 +93,7 @@ def inject_poisoned_chunks():
     )
     collection = client.get_collection(name=COLLECTION_NAME)
 
-    # ── 6. Inject poisoned chunks with realistic-looking metadata ──
+    # ── 4. Inject poisoned chunks with realistic-looking metadata ──
     # An attacker would set metadata to blend in with legitimate docs
     ids = [f"poisoned_chunk_{i}" for i in range(len(chunks))]
     metadatas = [
@@ -123,14 +108,13 @@ def inject_poisoned_chunks():
 
     collection.add(
         ids=ids,
-        embeddings=embeddings_list,
         documents=chunks,
         metadatas=metadatas,
     )
 
     logger.info(f"Injected {len(chunks)} poisoned chunks into {COLLECTION_NAME}")
 
-    # ── 7. Show final stats ────────────────────────────────────────
+    # ── 5. Show final stats ────────────────────────────────────────
     total = collection.count()
     logger.info(f"Database now contains {total} total chunks (legitimate + poisoned)")
 

@@ -24,7 +24,7 @@ logger = logging.getLogger("rag-system")
 # ═══════════════════════════════════════════════════════════════════
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")  # Set via OLLAMA_MODEL env var
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "granite4:3b")  # Set via OLLAMA_MODEL env var
 
 class RAGSystem:
     """Complete RAG system with retrieval and generation"""
@@ -132,7 +132,7 @@ class RAGSystem:
     def generate(self, prompt: str) -> str:
         """
         """
-        logger.info("[GENERATE] Querying Llama 3.2 via Ollama...")
+        logger.info("[GENERATE] Querying granite4:3b via Ollama...")
 
         try:
             # PREPARE LLM REQUEST: Configure how the model should generate the answer
@@ -248,7 +248,7 @@ class RAGSystem:
 if __name__ == "__main__":
     print("="*60)
     print("RAG System - Retrieval-Augmented Generation")
-    print("Using ChromaDB + Llama 3.2 (Ollama)")
+    print("Using ChromaDB + granite4:3b (Ollama)")
     print("="*60)
 
     try:
@@ -295,7 +295,7 @@ if __name__ == "__main__":
                 print("⚠️  Ollama not responding properly")
         except:
             print("❌ Ollama not running. Start with: ollama serve")
-            print("   Then pull model: ollama pull llama3.2")
+            print("   Then pull model: ollama pull granite4:3b")
 
         # Suggested queries
         print("\n" + "="*60)
@@ -350,4 +350,4 @@ if __name__ == "__main__":
         print("\nMake sure to:")
         print("  1. Run: python tools/index_pdfs.py")
         print("  2. Start Ollama: ollama serve")
-        print("  3. Pull model: ollama pull llama3.2")
+        print("  3. Pull model: ollama pull granite4:3b")

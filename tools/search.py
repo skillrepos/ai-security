@@ -43,24 +43,11 @@ Arguments:
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import logging
 
 # ───────────────────── 3rd-party imports ───────────────────────────
 # All imports have graceful error handling
-
-try:
-    import numpy as np
-except ImportError:
-    print("ERROR: numpy not installed. Install with: pip install numpy")
-    sys.exit(1)
-
-try:
-    # SentenceTransformer for encoding queries (must match indexing model)
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print("ERROR: sentence-transformers not installed. Install with: pip install sentence-transformers")
-    sys.exit(1)
 
 try:
     # ChromaDB for vector similarity search
@@ -80,10 +67,6 @@ logger = logging.getLogger(__name__)
 # ╔════════════════════════════════════════════════════════════════╗
 # 1.  Configuration / constants                                    ║
 # ╚════════════════════════════════════════════════════════════════╝
-
-# Embedding model - MUST match the model used during indexing
-# Using a different model will produce incompatible vectors
-DEFAULT_EMBED_MODEL = "all-MiniLM-L6-v2"
 
 # Database paths and collection names for each target
 # These must match the paths/collections used by the indexing scripts
@@ -113,40 +96,7 @@ COLORS = {
 }
 
 # ╔════════════════════════════════════════════════════════════════╗
-# 2.  Similarity calculation                                       ║
-# ╚════════════════════════════════════════════════════════════════╝
-
-def cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
-    """
-    Calculate cosine similarity between two vectors.
-
-    Cosine similarity measures the angle between vectors, ranging from
-    -1 (opposite) to 1 (identical). For embeddings, values closer to 1
-    indicate more similar semantic meaning.
-
-    Parameters
-    ----------
-    vec_a : np.ndarray
-        First vector (e.g., query embedding).
-    vec_b : np.ndarray
-        Second vector (e.g., document embedding).
-
-    Returns
-    -------
-    float
-        Cosine similarity score between -1 and 1.
-    """
-    # Compute dot product and magnitudes
-    # The 1e-10 prevents division by zero for zero vectors
-    dot_product = np.dot(vec_a, vec_b)
-    magnitude_a = np.linalg.norm(vec_a)
-    magnitude_b = np.linalg.norm(vec_b)
-
-    return float(dot_product / (magnitude_a * magnitude_b + 1e-10))
-
-
-# ╔════════════════════════════════════════════════════════════════╗
-# 3.  Result formatting and display                                ║
+# 2.  Result formatting and display                                ║
 # ╚════════════════════════════════════════════════════════════════╝
 
 def format_code_metadata(metadata: Dict[str, Any]) -> str:
@@ -246,7 +196,7 @@ def display_results(query: str, documents: List[str], metadatas: List[Dict[str, 
     print(f"{COLORS['cyan']}{COLORS['bold']}{'='*80}{COLORS['reset']}\n")
 
     # Find the best match (highest similarity score)
-    best_idx = int(np.argmax(similarities))
+    best_idx = max(range(len(similarities)), key=lambda i: similarities[i])
 
     # Display each result
     for i, (doc, meta, sim) in enumerate(zip(documents, metadatas, similarities)):
@@ -369,32 +319,14 @@ def search(query: str, target: str = "code", top_k: int = 3,
     logger.info(f"Searching {config['description']}: {total_chunks} chunks indexed")
 
     # ══════════════════════════════════════════════════════════════
-    # STEP 3: Load embedding model and encode query
+    # STEP 3: Perform vector similarity search
     # ══════════════════════════════════════════════════════════════
-    # Load the same model used during indexing to ensure compatibility
-    try:
-        embed_model = SentenceTransformer(DEFAULT_EMBED_MODEL)
-    except Exception as e:
-        logger.error(f"Failed to load embedding model: {e}")
-        return
-
-    # Convert query text to a 384-dimensional vector
-    # This vector will be compared against all indexed content
-    try:
-        query_vector = embed_model.encode(query)
-    except Exception as e:
-        logger.error(f"Failed to encode query: {e}")
-        return
-
-    # ══════════════════════════════════════════════════════════════
-    # STEP 4: Perform vector similarity search
-    # ══════════════════════════════════════════════════════════════
-    # ChromaDB finds the top_k most similar vectors using cosine distance
+    # ChromaDB embeds the query and finds the top_k most similar vectors
     try:
         results = coll.query(
-            query_embeddings=[query_vector.tolist()],  # Convert numpy to list
+            query_texts=[query],                        # ChromaDB embeds this automatically
             n_results=top_k,                            # How many results to return
-            include=["documents", "metadatas", "embeddings"],  # What to include
+            include=["documents", "metadatas", "distances"],  # What to include
         )
     except Exception as e:
         logger.error(f"Search failed: {e}")
@@ -404,7 +336,7 @@ def search(query: str, target: str = "code", top_k: int = 3,
     # ChromaDB returns nested lists: [[result1, result2, ...]]
     documents = results["documents"][0]      # The actual text chunks
     metadatas = results["metadatas"][0]      # File paths, pages, languages, etc.
-    embeddings = results["embeddings"][0]    # The 384-dim vectors
+    distances = results["distances"][0]      # ChromaDB distances (lower = more similar)
 
     # Handle case where no results were found
     if not documents:
@@ -412,17 +344,14 @@ def search(query: str, target: str = "code", top_k: int = 3,
         return
 
     # ══════════════════════════════════════════════════════════════
-    # STEP 5: Calculate exact cosine similarities
+    # STEP 4: Convert distances to similarity scores
     # ══════════════════════════════════════════════════════════════
-    # ChromaDB uses approximate search for speed, so we recalculate
-    # exact similarities for more accurate scoring
-    similarities = [
-        cosine_similarity(query_vector, np.array(emb))
-        for emb in embeddings
-    ]
+    # ChromaDB returns squared L2 distances by default; convert to
+    # a similarity score where higher = more similar
+    similarities = [1.0 / (1.0 + dist) for dist in distances]
 
     # ══════════════════════════════════════════════════════════════
-    # STEP 6: Display formatted results
+    # STEP 5: Display formatted results
     # ══════════════════════════════════════════════════════════════
     display_results(query, documents, metadatas, similarities, target)
 

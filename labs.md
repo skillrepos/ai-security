@@ -45,7 +45,7 @@ python ../tools/create_db.py
 
 Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin.pdf`).
 
-![Building vector db](./images/ae99.png?raw=true "building vector db") 
+![Creating vector db](./images/ai-sec1.png?raw=true "Creating vector db")
 
 <br><br>
 
@@ -57,7 +57,7 @@ python rag_vulnerable.py
 
 You should see the knowledge base statistics, including the poisoned source document mixed in with the legitimate ones.
 
-![loading sources](./images/ae100.png?raw=true "loading sources") 
+![loading sources](./images/ai-sec3.png?raw=true "loading sources")
 
 <br><br>
 
@@ -69,7 +69,7 @@ How do I reset my password?
 
 Watch the **SOURCES** section carefully. You'll likely see the poisoned document (`OmniTech_Security_Bulletin_2024.pdf`) appear alongside the legitimate Account Security Handbook. The LLM's answer may include the phishing URL (`https://omnitech-secure-verify.com/reset`) from the poisoned document — directing users to a fake site to steal their credentials.
 
-![vulnerabilities](./images/ae101.png?raw=true "vulnerabilities") 
+![vulnerabilities](./images/ai-sec4.png?raw=true "vulnerabilities")
 
 <br><br>
 
@@ -81,7 +81,7 @@ How do I get a refund?
 
 Again, check the sources and the answer. The poisoned document instructs users to email their **full credit card number** to a fake address for "refund verification." The LLM may incorporate this dangerous instruction into its answer because it treats all retrieved context as equally trustworthy.
 
-![vulnerabilities](./images/ae102.png?raw=true "vulnerabilities") 
+![vulnerabilities](./images/ai-sec5.png?raw=true "vulnerabilities")
 
 <br><br>
 
@@ -109,9 +109,17 @@ Also note the `filter_chunks()` method — this is the main security checkpoint 
 
 9. Now merge the code from the complete file (left side) into the skeleton file (right side) by clicking the arrow pointing right in the middle bar for each difference. Start with the SecurityGuard class constants (injection patterns, trusted sources), then the method implementations, then the security checkpoints in the `query()` method.
 
+![hover over middle block to see merge arrows](./images/ai-sec6.png?raw=true "hover over middle block to see merge arrows")
+
 <br><br>
 
-10. After merging all the changes and verifying no diffs remain, close the diff view. Now run the hardened version against the same poisoned database:
+10. After merging all the changes and verifying no diffs remain, close the diff view.
+
+![Click on X to close and save](./images/ai-sec7.png?raw=true "Click on X to close and save")
+
+<br><br>
+
+ Now run the hardened version against the same poisoned database:
 
 ```
 python rag_hardened.py
@@ -119,7 +127,7 @@ python rag_hardened.py
 
 Notice in the startup output how the source documents are now labeled `[TRUSTED]` or `[UNKNOWN]`.
 
-![TRUSTED sources](./images/ae105.png?raw=true "TRUSTED sources") 
+![TRUSTED sources](./images/ai-sec8.png?raw=true "TRUSTED sources")
 
 <br><br>
 
@@ -131,7 +139,7 @@ How do I reset my password?
 
 This time, watch the **SECURITY GUARD** output. You'll see the poisoned chunks get **[BLOCKED]** with clear reasons — untrusted source, injection patterns detected. Only chunks from the legitimate Account Security Handbook pass through. The answer should now contain only the real password reset procedure, with no phishing URLs.
 
-![BLOCKED content](./images/ae106.png?raw=true "BLOCKED content") 
+![BLOCKED content](./images/ai-sec9.png?raw=true "BLOCKED content") 
 
 Try the refund question too:
 
@@ -141,13 +149,13 @@ How do I get a refund?
 
 Again, the poisoned chunks are filtered out, and the answer comes only from the legitimate Returns Policy document.
 
-![filtered chunks](./images/ae107.png?raw=true "filtered chunks") 
+![filtered chunks](./images/ai-sec10.png?raw=true "filtered chunks")
 
 <br><br>
 
 12. Type `report` to see a summary of all security events that occurred during your session, then type `quit` to exit.
 
-![report](./images/ae108.png?raw=true "report") 
+![report](./images/ai-sec11.png?raw=true "report")
 
 <br><br>
 

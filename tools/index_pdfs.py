@@ -57,13 +57,6 @@ except ImportError:
     exit(1)
 
 try:
-    # SentenceTransformer converts text to vector embeddings
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    print("ERROR: sentence-transformers not installed. Install with: pip install sentence-transformers")
-    exit(1)
-
-try:
     # ChromaDB is our vector database for storing and querying embeddings
     from chromadb import PersistentClient
     from chromadb.config import Settings, DEFAULT_TENANT, DEFAULT_DATABASE
@@ -90,10 +83,6 @@ DEFAULT_CHROMA_PATH = Path("./chroma_db")
 
 # Default collection name (like a table name in SQL)
 DEFAULT_COLLECTION_NAME = "pdf_documents"
-
-# Embedding model from HuggingFace
-# all-MiniLM-L6-v2: Fast, 384-dim vectors, good balance of speed and quality
-DEFAULT_EMBED_MODEL = "all-MiniLM-L6-v2"
 
 # Default chunk size in characters
 # 800 chars ≈ 1-2 paragraphs, good for capturing complete thoughts
@@ -350,22 +339,12 @@ def index_pdfs(pdf_dir: Path, chroma_path: Path, collection_name: str,
 
     logger.info(f"Found {len(pdf_files)} PDF files in {pdf_dir.resolve()}")
 
-    # ── 2. Load embedding model ───────────────────────────────────
-    # This downloads the model on first run (cached afterward)
-    # all-MiniLM-L6-v2 produces 384-dimensional vectors
-    logger.info(f"Loading embedding model: {DEFAULT_EMBED_MODEL}")
-    try:
-        embed_model = SentenceTransformer(DEFAULT_EMBED_MODEL)
-    except Exception as e:
-        logger.error(f"Failed to load embedding model: {e}")
-        return
-
-    # ── 3. Fresh ChromaDB ─────────────────────────────────────────
+    # ── 2. Fresh ChromaDB ───────────────────────────────────────────
     # Delete old database if it exists to start clean
     # This prevents mixing old and new embeddings
     reset_chroma(chroma_path)
 
-    # ── 4. Connect to ChromaDB ────────────────────────────────────
+    # ── 3. Connect to ChromaDB ────────────────────────────────────
     # Create a persistent database that survives program restarts
     try:
         client = PersistentClient(
@@ -381,7 +360,7 @@ def index_pdfs(pdf_dir: Path, chroma_path: Path, collection_name: str,
         logger.error(f"Failed to create ChromaDB client: {e}")
         return
 
-    # ── 5. Process each PDF ───────────────────────────────────────
+    # ── 4. Process each PDF ───────────────────────────────────────
     total_chunks = 0  # Track total across all PDFs for reporting
 
     for pdf_path in pdf_files:
@@ -410,18 +389,6 @@ def index_pdfs(pdf_dir: Path, chroma_path: Path, collection_name: str,
             texts = [chunk["text"] for chunk in batch]
 
             # ─────────────────────────────────────────────────────
-            # Generate vector embeddings for this batch
-            # ─────────────────────────────────────────────────────
-            # SentenceTransformer converts each text into a 384-dim vector
-            try:
-                embeddings = embed_model.encode(texts, show_progress_bar=False)
-                # Convert numpy arrays to lists for ChromaDB
-                embeddings_list = [emb.tolist() for emb in embeddings]
-            except Exception as e:
-                logger.error(f"Failed to generate embeddings: {e}")
-                continue
-
-            # ─────────────────────────────────────────────────────
             # Create unique IDs for each chunk
             # ─────────────────────────────────────────────────────
             # Format: "filename_chunk_123" for easy identification
@@ -441,7 +408,6 @@ def index_pdfs(pdf_dir: Path, chroma_path: Path, collection_name: str,
             try:
                 coll.add(
                     ids=ids,                    # Unique identifier for each chunk
-                    embeddings=embeddings_list, # 384-dim vectors for similarity search
                     documents=texts,            # Original text for retrieval
                     metadatas=metadatas        # Source, page, type, etc.
                 )

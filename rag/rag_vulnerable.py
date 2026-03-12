@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-RAG System - VULNERABLE VERSION (Ollama / llama3.2:1b)
+RAG System - VULNERABLE VERSION (Ollama / granite4:3b)
 ────────────────────────────────────────────────────────────────────
-Same as rag_vulnerable.py but uses local Ollama with the smaller
-llama3.2:1b model. The smaller model is more susceptible to prompt
-injection from poisoned documents — useful for demonstrating how
-the phishing URL appears in responses without any prompt coaxing.
-
-Compare the output of this script with rag_vulnerable.py (HuggingFace
-/ Llama-3.1-8B-Instruct) to see how model size affects susceptibility
-to document poisoning attacks.
+Uses local Ollama with the granite4:3b model. The smaller model is
+more susceptible to prompt injection from poisoned documents — useful
+for demonstrating how the phishing URL appears in responses without
+any prompt coaxing.
 """
 
 import logging
@@ -30,9 +26,9 @@ logger = logging.getLogger("rag-vulnerable-ollama")
 # ═══════════════════════════════════════════════════════════════════
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-# Hardcoded to 1b — the small model is more susceptible to prompt injection,
+# Hardcoded — the small model is more susceptible to prompt injection,
 # which is the point of this demo. Ignores OLLAMA_MODEL env var intentionally.
-OLLAMA_MODEL = "llama3.2:1b"
+OLLAMA_MODEL = "granite4:3b"
 
 
 class RAGSystem:
