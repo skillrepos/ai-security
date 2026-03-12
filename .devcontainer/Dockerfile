@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:bookworm
 
 # Install Python
-RUN apt-get update && apt-get install -y python3 python3-venv python3-pip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 python3-venv python3-pip zstd && rm -rf /var/lib/apt/lists/*
 
 # Pre-install Ollama binary
 RUN curl -fsSL https://ollama.com/install.sh | sh
