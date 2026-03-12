@@ -696,12 +696,12 @@ python auth_server_v2.py
 
    Leave it running in this terminal.
 
-![auth server running](./images/ae133.png?raw=true "auth server running") 
+![auth server running](./images/ai-sec38.png?raw=true "auth server running")
 
 <br><br>
 
 
-6. Open a **new terminal**, change to *mcp* and get a token:
+6. Go to another terminal, change to *mcp* and get a token:
 
 ```
 cd mcp
@@ -725,12 +725,12 @@ python hardened_server.py
    - Input validation patterns: 4
    - Output sanitization patterns: 3
 
-![hardened server running](./images/ae135.png?raw=true "hardened server running") 
+![hardened server running](./images/ai-sec39.png?raw=true "hardened server running")
 
 <br><br>
 
 
-7. Open **another new terminal**, cd to *mcp* and run the **hardened client**:
+7. Open **another terminal**, cd to *mcp* and run the **hardened client**:
 
 ```
 cd mcp
@@ -792,7 +792,7 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
 
    Both should return `400` with a "blocked dangerous pattern" message.
 
-![hardened client running](./images/ae136.png?raw=true "hardened client running") 
+![hardened client running](./images/ai-sec40.png?raw=true "hardened client running")
 
 <br><br>
 
