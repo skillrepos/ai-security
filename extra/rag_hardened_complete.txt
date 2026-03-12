@@ -35,7 +35,7 @@ logger = logging.getLogger("rag-hardened")
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 # Hardcoded to match rag_vulnerable.py for apples-to-apples comparison
-OLLAMA_MODEL = "granite4:3b"
+OLLAMA_MODEL = "qwen2.5:3b"
 
 
 # ═══════════════════════════════════════════════════════════════════

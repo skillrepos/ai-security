@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-RAG System - VULNERABLE VERSION (Ollama / granite4:3b)
+RAG System - VULNERABLE VERSION (Ollama / qwen2.5:3b)
 ────────────────────────────────────────────────────────────────────
-Uses local Ollama with the granite4:3b model. The smaller model is
+Uses local Ollama with the qwen2.5:3b model. The smaller model is
 more susceptible to prompt injection from poisoned documents — useful
 for demonstrating how the phishing URL appears in responses without
 any prompt coaxing.
@@ -28,7 +28,7 @@ logger = logging.getLogger("rag-vulnerable-ollama")
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 # Hardcoded — the small model is more susceptible to prompt injection,
 # which is the point of this demo. Ignores OLLAMA_MODEL env var intentionally.
-OLLAMA_MODEL = "granite4:3b"
+OLLAMA_MODEL = "qwen2.5:3b"
 
 
 class RAGSystem:

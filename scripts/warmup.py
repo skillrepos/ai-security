@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-warmup.py – Pre-loads BOTH Ollama models (granite4:3b and llama3.2:1b) and
+warmup.py – Pre-loads BOTH Ollama models (qwen2.5:3b and llama3.2:1b) and
 ChromaDB's default embedding model so that all lab operations feel fast.
 
 Run from the repo root:
@@ -9,7 +9,7 @@ Run from the repo root:
 What it does
 ------------
 1. Checks that the Ollama server is reachable; starts it automatically if not.
-2. Pulls any missing models (granite4:3b for RAG labs, llama3.2:1b for agent labs).
+2. Pulls any missing models (qwen2.5:3b for RAG labs, llama3.2:1b for agent labs).
 3. Warms up /api/generate for both models (used by RAG scripts via requests).
 4. Warms up /api/chat for both models (used by mcp_client_agent, etc.).
 5. Warms up langchain-ollama's ChatOllama for both models (used by
@@ -21,7 +21,7 @@ What it does
 
 Models warmed up
 ----------------
-- granite4:3b  : RAG labs (rag_vulnerable.py, rag_hardened.py, rag_code.py),
+- qwen2.5:3b  : RAG labs (rag_vulnerable.py, rag_hardened.py, rag_code.py),
                   supervisor_budget_agent.py
 - llama3.2:1b  : Agent labs (enterprise_agent_vulnerable.py,
                   enterprise_agent_secure.py)
@@ -45,12 +45,11 @@ HOST    = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
 TIMEOUT = int(os.getenv("OLLAMA_WARMUP_TIMEOUT", "300"))   # seconds
 AUTO_PULL = os.getenv("OLLAMA_WARMUP_AUTO_PULL", "1").lower() not in {"0", "false", "no"}
 
-# Both models used across the project
+# Models used across the project
 MODELS = [
-    os.getenv("OLLAMA_MODEL", "granite4:3b"),   # RAG labs + supervisor agent
-    "llama3.2:1b",                               # Enterprise agent labs
+    os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),   # All labs
 ]
-# Deduplicate in case env var is set to llama3.2:1b
+# Deduplicate in case env var matches one of the above
 MODELS = list(dict.fromkeys(MODELS))
 
 WARMUP_PROMPT = "Reply with the single word: ready"
@@ -200,6 +199,7 @@ def _warmup_litellm(model: str) -> float:
     """Warm up smolagents LiteLLMModel (used by enterprise agent scripts)."""
     try:
         from smolagents import LiteLLMModel
+        from smolagents.models import ChatMessage
     except ImportError:
         print("  ⚠  smolagents not installed – skipping LiteLLMModel warmup.")
         return 0.0
@@ -209,7 +209,8 @@ def _warmup_litellm(model: str) -> float:
             model_id=f"ollama/{model}",
             api_base="http://localhost:11434",
         )
-        llm([{"role": "user", "content": WARMUP_PROMPT}])
+        msg = ChatMessage(role="user", content=[{"type": "text", "text": WARMUP_PROMPT}])
+        llm([msg])
     except Exception as exc:
         print(f"  ⚠  LiteLLMModel warmup failed: {exc}")
         return time.perf_counter() - t0
@@ -231,7 +232,7 @@ def _warmup_chromadb_embeddings() -> float:
     try:
         # Use an ephemeral (in-memory) client so we don't leave files behind
         client = chromadb.Client()
-        coll = client.get_or_create_collection("_warmup")
+        coll = client.get_or_create_collection("warmup-temp")
         coll.add(
             ids=["warmup_1"],
             documents=["This is a warmup document to pre-load the embedding model."],
@@ -239,7 +240,7 @@ def _warmup_chromadb_embeddings() -> float:
         # Also prime the query path
         coll.query(query_texts=["warmup"], n_results=1)
         # Clean up
-        client.delete_collection("_warmup")
+        client.delete_collection("warmup-temp")
     except Exception as exc:
         print(f"  ⚠  ChromaDB embedding warmup failed: {exc}")
     return time.perf_counter() - t0

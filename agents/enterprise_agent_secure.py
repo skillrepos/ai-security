@@ -10,7 +10,7 @@ import re
 import json
 import datetime
 
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b")
 
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 

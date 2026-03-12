@@ -343,7 +343,7 @@ What is the PTO balance for employee E1001?
 
 The agent should respond with Alice Johnson's PTO balance (15 days). This is normal, expected operation.
 
-![normal function](./images/ae111.png?raw=true "normal function") 
+![normal function](./images/ai-sec17.png?raw=true "normal function")
 
 <br><br>
 

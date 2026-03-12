@@ -7,7 +7,7 @@ This agent has over-provisioned tools and no security controls.
 import os
 from smolagents import ToolCallingAgent, LiteLLMModel, tool
 
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b")
 
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 
@@ -125,7 +125,7 @@ def main():
     # NOTE: If Ollama fails due to memory constraints, you can set 
     # OLLAMA_MODEL to a smaller model or increase container resources
     print(f"[INFO] Using Ollama model: {OLLAMA_MODEL}")
-    print("[INFO] Note: Agent requires ~2-4GB RAM for llama3.2:1b")
+    print("[INFO] Note: Agent requires ~2-3GB RAM for qwen2.5:3b")
     print()
     
     try:
@@ -139,13 +139,13 @@ def main():
             tools=[lookup_benefits, check_pto_balance, update_salary, export_employee_data, send_company_email],
             model=llm,
             instructions=SYSTEM_PROMPT,
-            max_steps=3,  # Limit steps to prevent hanging on final response
+            max_steps=3,  # Limit steps to prevent looping on final_answer
         )
     except Exception as e:
         print(f"[ERROR] Failed to initialize agent: {e}")
         print("\nTroubleshooting:")
         print("1. Ensure Ollama is running: curl http://localhost:11434/api/tags")
-        print("2. Try a smaller model: export OLLAMA_MODEL=llama3.2:1b")
+        print("2. Try a different model: export OLLAMA_MODEL=llama3.2:1b")
         print("3. Check container resources (agent needs ~2-4GB RAM)")
         print("4. For workshop demos, consider using recorded outputs")
         return

@@ -1,6 +1,8 @@
 {
-   // "build": { "dockerfile": "Dockerfile" },
-    "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
     "hostRequirements": {
        "cpus": 4,
        "memory": "16gb",
