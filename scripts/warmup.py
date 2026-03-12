@@ -47,7 +47,8 @@ AUTO_PULL = os.getenv("OLLAMA_WARMUP_AUTO_PULL", "1").lower() not in {"0", "fals
 
 # Models used across the project
 MODELS = [
-    os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),   # All labs
+    os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),   # RAG + enterprise agent labs
+    "llama3.2:1b",                               # Supervisor budget agent lab
 ]
 # Deduplicate in case env var matches one of the above
 MODELS = list(dict.fromkeys(MODELS))
