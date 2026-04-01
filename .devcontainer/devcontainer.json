@@ -1,19 +1,9 @@
 {
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
-    },
+    "image": "ghcr.io/skillrepos/ai-security-devcontainer:latest",
     "hostRequirements": {
-       "cpus": 4,
-       "memory": "16gb",
-       "storage": "32gb"
-    },
-    "features": {
-       "ghcr.io/devcontainers/features/python:1": {},
-       "node": {
-               "version": "lts",
-               "nodeGypDependencies": true
-        }
+        "cpus": 4,
+        "memory": "16gb",
+        "storage": "32gb"
     },
     "customizations": {
         "vscode": {
@@ -21,28 +11,26 @@
                 "python.terminal.activateEnvInCurrentTerminal": true,
                 "python.defaultInterpreterPath": "${containerWorkspaceFolder}/py_env/bin/python",
                 "github.copilot.enable": {
-                  "*": false,
-                  "plaintext": false,  
-                  "markdown": false,
-                  "scminput": false
-                 },   
-                 "github.copilot.enableAutoComplete": false, 
-                 "editor.inlineSuggest.enabled": false,
-                 "github.copilot.inlineSuggest.enable": false,
-                 "github.copilot.chat.enable": false,
-                 "github.copilotChat.showInExplorer": false,
-                 "workbench.startupEditor": "readme", 
-                 // Open Markdown files in preview mode by default
-                 "workbench.editorAssociations": {
-                     "*.md": "vscode.markdown.preview.editor"
-                 }
+                    "*": false,
+                    "plaintext": false,
+                    "markdown": false,
+                    "scminput": false
+                },
+                "github.copilot.enableAutoComplete": false,
+                "editor.inlineSuggest.enabled": false,
+                "github.copilot.inlineSuggest.enable": false,
+                "github.copilot.chat.enable": false,
+                "github.copilotChat.showInExplorer": false,
+                "workbench.startupEditor": "readme",
+                "workbench.editorAssociations": {
+                    "*.md": "vscode.markdown.preview.editor"
+                }
             },
             "extensions": [
-               "mathematic.vscode-pdf"
+                "mathematic.vscode-pdf"
             ]
         }
     },
     "postCreateCommand": "bash -i scripts/pysetup.sh py_env && bash -i scripts/startOllama.sh && py_env/bin/python scripts/warmup.py",
     "postAttachCommand": "bash scripts/post_attach_ollama.sh"
-
 }
