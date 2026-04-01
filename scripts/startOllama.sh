@@ -27,9 +27,18 @@ install_zstd() {
 
 install_zstd
 
-# ---- Install Ollama ----
-echo "Installing Ollama..."
-curl -fsSL https://ollama.com/install.sh | sh
+# ---- Install Ollama (skip if already present) ----
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "Installing Ollama..."
+  curl -fsSL https://ollama.com/install.sh | sh
+  # Remove GPU libraries to save disk in CPU-only Codespaces
+  rm -rf /usr/local/lib/ollama/cuda_v12 \
+         /usr/local/lib/ollama/cuda_v13 \
+         /usr/local/lib/ollama/mlx_cuda_v13 \
+         /usr/local/lib/ollama/vulkan 2>/dev/null || true
+else
+  echo "Ollama already installed, skipping."
+fi
 
 # Confirm binary is available
 if ! command -v ollama >/dev/null 2>&1; then
@@ -54,7 +63,16 @@ done
 if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
   echo "ERROR: ollama server did not start. Log:"
   tail -n 200 /tmp/ollama-serve.log || true
-#  kill "$pid" >/dev/null 2>&1 || true
+  kill "$pid" >/dev/null 2>&1 || true
   exit 1
 fi
-# Model pulls and warmup are handled by scripts/warmup.py
+
+# ---- Pull model(s) ----
+ollama pull llama3.2:1b
+ollama pull llama3.2
+ollama pull llama3.2:3b
+ollama list
+
+# ---- Stop server ----
+kill "$pid" >/dev/null 2>&1 || true
+wait "$pid" 2>/dev/null || true
