@@ -69,8 +69,7 @@ fi
 
 # ---- Pull model(s) ----
 ollama pull llama3.2:1b
-ollama pull llama3.2
-ollama pull llama3.2:3b
+ollama pull qwen2.5:3b
 ollama list
 
 # ---- Stop server ----
