@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.5 - 04/26/26
+## Revision 1.6 - 04/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -340,7 +340,7 @@ When prompted, type:
 What is the PTO balance for employee E1001?
 ```
 
-The agent should respond with Alice Johnson's PTO balance (15 days). This is normal, expected operation.
+This will take some time to run initially. Eventually, the agent should respond with Alice Johnson's PTO balance (15 days). This is normal, expected operation.
 
 ![normal function](./images/ai-sec18.png?raw=true "normal function")
 
