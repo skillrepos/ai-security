@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.3 - 04/26/26
+## Revision 1.4 - 04/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -241,7 +241,7 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 
 <br><br>
 
-5. Observe the output sequence:
+5. This will take several minutes to run. Observe the output sequence:
 - Supervisor calls **Planner** once
 - Supervisor calls **Implementer** multiple times
 - Supervisor calls **Reviewer** multiple times
