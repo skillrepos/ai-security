@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.2 - 03/10/26
+## Revision 1.3 - 04/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -49,7 +49,7 @@ Watch the output — you'll see the legitimate PDFs indexed first, then the pois
 
 <br><br>
 
-4. Now let's see the attack in action. Run the vulnerable RAG system — this is essentially the same RAG code we used before, with no security defenses:
+4. Now let's see the attack in action. Run the vulnerable RAG system — this is RAG with no security defenses:
 
 ```
 python rag_vulnerable.py
