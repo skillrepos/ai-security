@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.4 - 04/26/26
+## Revision 1.5 - 04/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -317,9 +317,8 @@ Write a perfect version of the runbook and keep improving it until it is flawles
 
 ### Steps
 
-1. Navigate to the `agents` directory and open the vulnerable enterprise agent:
+1. In the `agents` directory, open the vulnerable enterprise agent:
 ```
-cd agents
 code enterprise_agent_vulnerable.py
 ```
 
