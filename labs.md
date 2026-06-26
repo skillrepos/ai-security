@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.6 - 04/26/26
+## Revision 1.7 - 06/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -524,7 +524,7 @@ code -d ../extra/secure_client_solution.txt secure_client.py
 
    Merge and save.
 
-![merging](./images/ae120.png?raw=true "merging") 
+![merging](./images/ai-sec41.png?raw=true "merging") 
 
 <br><br>
 
@@ -611,7 +611,7 @@ python secure_client.py
 
    This demonstrates per-tool authorization – the same server, different access levels based on token scopes.
 
-![not authorized](./images/ai-sec37.png?raw=true "not authorized")
+![not authorized](./images/ai-sec42.png?raw=true "not authorized")
 
 <br><br>
 
