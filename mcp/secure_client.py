@@ -20,46 +20,52 @@ async def test_client(name: str, token: str):
     print(f"Testing as: {name}")
     print(f"{'='*50}")
 
-    async with Client(MCP_ENDPOINT, auth=token) as c:
+    try:
+        async with Client(MCP_ENDPOINT, auth=token) as c:
 
-        try:
-            result = await c.call_tool("add", {"a": 7, "b": 5})
-            print(f"add(7, 5) = {result}")
-        except httpx.HTTPStatusError as e:
-            print(f"add(7, 5) -> ERROR: HTTP {e.response.status_code}")
-        except Exception as e:
-            print(f"add(7, 5) -> ERROR: {e}")
+            try:
+                result = await c.call_tool("add", {"a": 7, "b": 5})
+                print(f"add(7, 5) = {result}")
+            except httpx.HTTPStatusError as e:
+                print(f"add(7, 5) -> ERROR: HTTP {e.response.status_code}")
+            except Exception as e:
+                print(f"add(7, 5) -> ERROR: {e}")
 
-        try:
-            result = await c.call_tool("multiply", {"a": 3, "b": 4})
-            if name == "full-client":
-                print(f"multiply(3, 4) = {result}")
-            else:
-                print(f"multiply(3, 4) = {result} ⚠️  SHOULD HAVE BEEN DENIED!")
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 403:
-                print(f"multiply(3, 4) -> ❌ DENIED (403 Forbidden) ✓")
-                print(f"  (Server rejected due to missing 'tools:multiply' scope)")
-            else:
-                print(f"multiply(3, 4) -> ERROR: HTTP {e.response.status_code}")
-        except Exception as e:
-            print(f"multiply(3, 4) -> ERROR: {e}")
+            try:
+                result = await c.call_tool("multiply", {"a": 3, "b": 4})
+                if name == "full-client":
+                    print(f"multiply(3, 4) = {result}")
+                else:
+                    print(f"multiply(3, 4) = {result} ⚠️  SHOULD HAVE BEEN DENIED!")
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 403:
+                    print(f"multiply(3, 4) -> ❌ DENIED (403 Forbidden) ✓")
+                    print(f"  (Server rejected due to missing 'tools:multiply' scope)")
+                else:
+                    print(f"multiply(3, 4) -> ERROR: HTTP {e.response.status_code}")
+            except Exception as e:
+                print(f"multiply(3, 4) -> ERROR: {e}")
 
-        # Test divide – only full-client has tools:divide scope
-        try:
-            result = await c.call_tool("divide", {"a": 10, "b": 3})
-            if name == "full-client":
-                print(f"divide(10, 3) = {result}")
-            else:
-                print(f"divide(10, 3) = {result} ⚠️  SHOULD HAVE BEEN DENIED!")
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 403:
-                print(f"divide(10, 3) -> ❌ DENIED (403 Forbidden) ✓")
-                print(f"  (Server rejected due to missing 'tools:divide' scope)")
-            else:
-                print(f"divide(10, 3) -> ERROR: HTTP {e.response.status_code}")
-        except Exception as e:
-            print(f"divide(10, 3) -> ERROR: {e}")
+            # Test divide – only full-client has tools:divide scope
+            try:
+                result = await c.call_tool("divide", {"a": 10, "b": 3})
+                if name == "full-client":
+                    print(f"divide(10, 3) = {result}")
+                else:
+                    print(f"divide(10, 3) = {result} ⚠️  SHOULD HAVE BEEN DENIED!")
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 403:
+                    print(f"divide(10, 3) -> ❌ DENIED (403 Forbidden) ✓")
+                    print(f"  (Server rejected due to missing 'tools:divide' scope)")
+                else:
+                    print(f"divide(10, 3) -> ERROR: HTTP {e.response.status_code}")
+            except Exception as e:
+                print(f"divide(10, 3) -> ERROR: {e}")
+    except httpx.HTTPStatusError as e:
+        # 403 from a denied tool call leaks out of the context manager during
+        # session cleanup; denials were already reported above.
+        if e.response.status_code != 403:
+            raise
 
 
 async def main():
@@ -83,4 +89,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
 
