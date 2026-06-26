@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.7 - 06/26/26
+## Revision 1.8 - 06/26/26
 
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
@@ -737,7 +737,7 @@ cd mcp
 python hardened_client.py
 ```
 
-   Watch each scenario in the output:
+   Scroll back up to the top of the output for the run and notice each scenario in the output:
 
    **Scenario 1 – Normal Call**: `add(3, 4) = 7` succeeds normally.
 
@@ -751,7 +751,7 @@ python hardened_client.py
 <br><br>
 
 
-8. Continue watching the output:
+8. Continue examining the output:
 
    **Scenario 3 – Rate Limiting**: Six rapid requests are sent via raw HTTP. Requests 1-5 return `200 OK`, but request 6 returns `429 BLOCKED`. The server terminal shows an `[AUDIT] RATE_LIMITED` entry.
 
@@ -789,8 +789,8 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
      -d '{"jsonrpc":"2.0","id":"py","method":"tools/call","params":{"name":"search_notes","arguments":{"query":"__import__(os).system(whoami)"}}}' | jq
 ```
 
-   Both should return `400` with a "blocked dangerous pattern" message.
-
+   You should see error codes like `429` and `307` indicating issues.
+   
 ![hardened client running](./images/ai-sec40.png?raw=true "hardened client running")
 
 <br><br>
