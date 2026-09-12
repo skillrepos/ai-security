@@ -7,15 +7,22 @@ from fastmcp import Client
 
 AUTH_SERVER   = "http://127.0.0.1:9000/token"
 MCP_ENDPOINT  = "http://127.0.0.1:8000/mcp/"
+# Raw JSON-RPC posts go to the un-slashed path: Starlette 307-redirects
+# /mcp/ -> /mcp, and httpx does not follow redirects by default.
+RAW_ENDPOINT  = "http://127.0.0.1:8000/mcp"
+# Streamable HTTP requires the client to accept both content types.
+RAW_HEADERS   = {"Content-Type": "application/json",
+                 "Accept": "application/json, text/event-stream"}
 CALL_TIMEOUT  = 5.0  # Timeout for tool calls (FastMCP client can hang)
 
 
-async def get_token() -> str:
+async def get_token(client_id: str = "demo-client",
+                    secret: str = "demopass") -> str:
     """Obtain a JWT from the authorization server."""
     async with httpx.AsyncClient() as h:
         r = await h.post(AUTH_SERVER, data={
-            "username": "demo-client",
-            "password": "demopass"
+            "username": client_id,
+            "password": secret
         })
         r.raise_for_status()
         return r.json()["access_token"]
@@ -95,16 +102,16 @@ async def main():
 
     # ── Scenario 3: Rate limiting test (raw HTTP) ──
     print("\n" + "=" * 50)
-    print("Scenario 3: Rate Limiting (6 rapid requests)")
+    print("Scenario 3: Rate Limiting (12 rapid requests)")
     print("=" * 50)
-    async with httpx.AsyncClient() as h:
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
-        for i in range(6):
+    # Rate limits are per client, so this demo uses its own identity and
+    # therefore its own fresh budget.
+    raw_token = await get_token("ratelimit-demo", "demopass2")
+    async with httpx.AsyncClient(follow_redirects=True) as h:
+        headers = {"Authorization": f"Bearer {raw_token}", **RAW_HEADERS}
+        for i in range(12):
             r = await h.post(
-                MCP_ENDPOINT, headers=headers,
+                RAW_ENDPOINT, headers=headers,
                 json={
                     "jsonrpc": "2.0", "id": str(i),
                     "method": "tools/call",
@@ -119,14 +126,11 @@ async def main():
     print("\n" + "=" * 50)
     print("Scenario 4: Input Validation (dangerous input)")
     print("=" * 50)
-    async with httpx.AsyncClient() as h:
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
+    async with httpx.AsyncClient(follow_redirects=True) as h:
+        headers = {"Authorization": f"Bearer {raw_token}", **RAW_HEADERS}
         # Try XSS in a tool argument
         r = await h.post(
-            MCP_ENDPOINT, headers=headers,
+            RAW_ENDPOINT, headers=headers,
             json={
                 "jsonrpc": "2.0", "id": "xss-test",
                 "method": "tools/call",
@@ -140,7 +144,7 @@ async def main():
 
         # Try SQL injection
         r = await h.post(
-            MCP_ENDPOINT, headers=headers,
+            RAW_ENDPOINT, headers=headers,
             json={
                 "jsonrpc": "2.0", "id": "sql-test",
                 "method": "tools/call",

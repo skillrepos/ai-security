@@ -9,7 +9,8 @@ from collections import defaultdict
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError as JWTError
 
 from fastmcp import FastMCP
 import uvicorn
@@ -25,7 +26,7 @@ AUDIENCE   = "mcp-lab"
 # ═══════════════════════════════════════════════════════════════
 # Rate Limiting Configuration
 # ═══════════════════════════════════════════════════════════════
-RATE_LIMIT_MAX    = 20      # max tool calls per window (increased for demo with multiple Client connections)
+RATE_LIMIT_MAX    = 10      # max tool calls per window, per client
 RATE_LIMIT_WINDOW = 60      # window in seconds
 _request_log = defaultdict(list)
 
@@ -93,7 +94,12 @@ _FAKE_CUSTOMERS = {
 # MCP Server + Middleware
 # ═══════════════════════════════════════════════════════════════
 mcp = FastMCP("Hardened Server")
-app = mcp.http_app(path="/mcp", transport="streamable-http")
+# stateless_http=True: every request stands on its own - no prior
+# initialize handshake and no session id. That is what lets the raw
+# JSON-RPC posts in the client work, and it matches the 2026-07-28 spec.
+# json_response=True returns plain JSON instead of an SSE stream.
+app = mcp.http_app(path="/mcp", transport="streamable-http",
+                   stateless_http=True, json_response=True)
 
 
 class HardenedMiddleware(BaseHTTPMiddleware):

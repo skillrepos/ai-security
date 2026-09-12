@@ -1,12 +1,13 @@
 # auth_server.py  –  Lab 4: Auth + Per-Tool Scopes
 #
-# FastAPI >= 0.110, python-jose, uvicorn
+# FastAPI >= 0.110, pyjwt, uvicorn
 # Issues + introspects HS256-signed JWTs with per-tool scopes
 
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError as JWTError
 import uvicorn
 
 SECRET_KEY = "mcp-lab-secret"          # symmetric key shared with the MCP server

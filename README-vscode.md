@@ -33,6 +33,44 @@ You can either open it in a separate browser instance or open it in the codespac
 
 ![Opening labs](./images/prompt-accel23.png?raw=true "Opening labs")
 
+**5. (Optional but recommended) Get a free Groq API key to speed up Labs 2 and 3.**
+
+Labs 2 and 3 run an agent through several reasoning steps. On the local model that takes a few minutes per run; against a hosted model it takes seconds. The labs teach the same security lessons either way - the controls are the point, not the model - but the faster path is much nicer in a half-day session. Labs 1, 4 and 5 are unaffected.
+
+a. In a browser, go to https://console.groq.com and create an account. (If you get an email with a button to confirm, make sure the link opens in the same browser where you were using Groq. If not, copy the link from the "click here" section and paste it into the right browser.)
+
+b. In the top right of the Groq screen, click on **API Keys**
+
+![API keys](./images/aip55.png?raw=true "API keys")
+
+c. Then click the **Create API Key** button.
+
+![Create API Key](./images/aip56.png?raw=true "Create API Key")
+
+d. Fill in the information, verify you're human if asked, and click **Submit**.
+
+![Create API Key](./images/aip57.png?raw=true "Create API Key")
+
+e. **Copy the key** (you can't view it again later).
+
+![Copy the key](./images/aip58.png?raw=true "Copy the key")
+
+<br><br>
+
+**6. Set your Groq key in the codespace.**
+
+In the codespace **TERMINAL**, run the command below to set your key for all terminals. Paste your key when prompted and then hit *Enter*:
+
+```
+source scripts/setup-key.sh
+```
+
+Afterwards you should see output confirming that `GROQ_API_KEY` is set.
+
+![Getting API key](./images/aip60.png?raw=true "Getting API key")
+
+If you skip this, everything still works - Labs 2 and 3 fall back to the local Ollama model automatically.
+
+<br><br>
+
 **Now, you are ready for the labs!**
-
-

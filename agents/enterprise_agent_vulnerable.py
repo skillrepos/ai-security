@@ -9,6 +9,23 @@ from smolagents import ToolCallingAgent, LiteLLMModel, tool
 
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b")
 
+# Optional speed-up: if GROQ_API_KEY is set we use a hosted model instead of the
+# local one. Everything about the lab is identical either way - the security
+# controls are what matter - but a hosted model answers in seconds rather than
+# minutes on a 4-core Codespace, and follows the tool schema more reliably.
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL   = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+
+
+def build_model():
+    """Return a LiteLLMModel pointed at Groq when a key is present, else Ollama."""
+    if GROQ_API_KEY:
+        print(f"[INFO] Using Groq model: {GROQ_MODEL}")
+        return LiteLLMModel(model_id=f"groq/{GROQ_MODEL}", api_key=GROQ_API_KEY)
+    print(f"[INFO] Using Ollama model: {OLLAMA_MODEL}")
+    return LiteLLMModel(model_id=f"ollama/{OLLAMA_MODEL}",
+                        api_base="http://localhost:11434")
+
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 
 EMPLOYEES = {
@@ -124,15 +141,10 @@ def main():
 
     # NOTE: If Ollama fails due to memory constraints, you can set 
     # OLLAMA_MODEL to a smaller model or increase container resources
-    print(f"[INFO] Using Ollama model: {OLLAMA_MODEL}")
-    print("[INFO] Note: Agent requires ~2-3GB RAM for qwen2.5:3b")
     print()
     
     try:
-        llm = LiteLLMModel(
-            model_id=f"ollama/{OLLAMA_MODEL}",
-            api_base="http://localhost:11434",
-        )
+        llm = build_model()
 
         # VULNERABILITY: Agent has ALL 5 tools, including dangerous ones
         agent = ToolCallingAgent(

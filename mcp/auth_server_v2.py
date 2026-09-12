@@ -7,7 +7,8 @@
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError as JWTError
 import uvicorn
 
 SECRET_KEY = "mcp-lab-secret"          # symmetric key shared with the MCP server
@@ -16,16 +17,19 @@ AUDIENCE   = "mcp-lab"
 EXPIRES_IN = 3600                      # 1 hour
 
 # 1) Client registry – each client gets specific tool scopes
+_SCOPES = [
+    "tools:add",
+    "tools:lookup_customer",
+    "tools:search_notes",
+    "tools:get_audit_log"
+]
+
 _fake_clients = {
-    "demo-client": {
-        "client_secret": "demopass",
-        "scopes": [
-            "tools:add",
-            "tools:lookup_customer",
-            "tools:search_notes",
-            "tools:get_audit_log"
-        ]
-    }
+    "demo-client":    {"client_secret": "demopass",  "scopes": _SCOPES},
+    # Same scopes, separate identity. Rate limits are per client, so the
+    # raw-HTTP scenarios get their own budget instead of inheriting whatever
+    # the main client has already spent.
+    "ratelimit-demo": {"client_secret": "demopass2", "scopes": _SCOPES},
 }
 
 app = FastAPI(title="MCP Lab – Auth Server")

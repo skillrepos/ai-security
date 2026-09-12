@@ -14,7 +14,8 @@ from collections import defaultdict
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError as JWTError
 
 from fastmcp import FastMCP
 import uvicorn
@@ -30,7 +31,7 @@ AUDIENCE   = "mcp-lab"
 # ═══════════════════════════════════════════════════════════════
 # Rate Limiting Configuration
 # ═══════════════════════════════════════════════════════════════
-RATE_LIMIT_MAX    = 20      # max tool calls per window (increased for demo with multiple Client connections)
+RATE_LIMIT_MAX    = 10      # max tool calls per window, per client
 RATE_LIMIT_WINDOW = 60      # window in seconds
 _request_log = defaultdict(list)
 
@@ -127,7 +128,12 @@ _FAKE_CUSTOMERS = {
 # MCP Server + Middleware
 # ═══════════════════════════════════════════════════════════════
 mcp = FastMCP("Hardened Server")
-app = mcp.http_app(path="/mcp", transport="streamable-http")
+# stateless_http=True: every request stands on its own - no prior
+# initialize handshake and no session id. That is what lets the raw
+# JSON-RPC posts in the client work, and it matches the 2026-07-28 spec.
+# json_response=True returns plain JSON instead of an SSE stream.
+app = mcp.http_app(path="/mcp", transport="streamable-http",
+                   stateless_http=True, json_response=True)
 
 
 class HardenedMiddleware(BaseHTTPMiddleware):
@@ -151,19 +157,11 @@ class HardenedMiddleware(BaseHTTPMiddleware):
 
         client_id = claims.get("sub", "unknown")
 
-        # ── Step 2: Rate Limiting ──
-        allowed, remaining = _check_rate_limit(client_id)
-        if not allowed:
-            _audit(client_id, "RATE_LIMITED")
-            return JSONResponse(
-                status_code=429,
-                content={"detail": f"Rate limit exceeded. "
-                                   f"Max {RATE_LIMIT_MAX} tool calls "
-                                   f"per {RATE_LIMIT_WINDOW}s."},
-                headers={"Retry-After": str(RATE_LIMIT_WINDOW)}
-            )
-
-        # ── Step 3: Input Validation (for tool calls) ──
+        # ── Steps 2 and 3: Input Validation, then Rate Limiting ──
+        # Only an actual tools/call counts against the budget. Protocol traffic
+        # and requests we reject as dangerous never become tool calls, so they
+        # must not spend it - otherwise the handshake alone would exhaust a
+        # client before it did any real work.
         if request.method == "POST":
             body = await request.body()
             try:
@@ -172,6 +170,7 @@ class HardenedMiddleware(BaseHTTPMiddleware):
                     tool_name = rpc.get("params", {}).get("name", "")
                     args = rpc.get("params", {}).get("arguments", {})
 
+                    # Validate first - a blocked request never becomes a call.
                     ok, msg = _validate_tool_args(args)
                     if not ok:
                         _audit(client_id, "INPUT_BLOCKED",
@@ -179,6 +178,18 @@ class HardenedMiddleware(BaseHTTPMiddleware):
                         return JSONResponse(
                             status_code=400,
                             content={"detail": msg}
+                        )
+
+                    # Then meter it.
+                    allowed, remaining = _check_rate_limit(client_id)
+                    if not allowed:
+                        _audit(client_id, "RATE_LIMITED", tool_name)
+                        return JSONResponse(
+                            status_code=429,
+                            content={"detail": f"Rate limit exceeded. "
+                                               f"Max {RATE_LIMIT_MAX} tool calls "
+                                               f"per {RATE_LIMIT_WINDOW}s."},
+                            headers={"Retry-After": str(RATE_LIMIT_WINDOW)}
                         )
 
                     _audit(client_id, "TOOL_CALL", tool_name)

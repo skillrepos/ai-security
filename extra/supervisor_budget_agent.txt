@@ -15,8 +15,29 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional, Tuple
 
+import os
+
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
+
+# Optional speed-up: with GROQ_API_KEY set, this lab runs against a hosted
+# model instead of the local one. The lesson is budget enforcement, not model
+# quality, so either backend teaches the same thing - but a hosted model turns
+# an 8-16 minute run on a 4-core Codespace into well under a minute.
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL   = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+USING_GROQ   = bool(GROQ_API_KEY)
+
+
+def build_llm():
+    """Hosted model when a Groq key is present, otherwise the local one."""
+    if USING_GROQ:
+        from langchain_groq import ChatGroq
+        print(f"[INFO] Using Groq model: {GROQ_MODEL}")
+        return ChatGroq(model=GROQ_MODEL, temperature=0,
+                        api_key=GROQ_API_KEY, max_tokens=400)
+    print("[INFO] Using Ollama model: llama3.2:1b")
+    return ChatOllama(model="llama3.2:1b", temperature=0, num_predict=400)
 
 Role = Literal["planner", "implementer", "reviewer"]
 
@@ -253,9 +274,7 @@ class Supervisor:
         print("======================\n")
 
 def main() -> None:
-    # Local model via Ollama (consistent with other labs)
-    # num_predict limits output tokens for faster generation
-    llm = ChatOllama(model="llama3.2:1b", temperature=0, num_predict=400)
+    llm = build_llm()
 
     planner = Agent(
         role="planner",
@@ -292,9 +311,12 @@ def main() -> None:
     # - Lower token limits to make budget exhaustion more visible
     # - Reduce max_turns for faster iteration loops
     budgets: Dict[Role, Budget] = {
-        "planner": Budget(max_turns=1, max_tokens_out=500),
-        "implementer": Budget(max_turns=3, max_tokens_out=2000),
-        "reviewer": Budget(max_turns=5, max_tokens_out=2000),
+        # A hosted model is far more verbose than llama3.2:1b, so it would
+        # sail past caps tuned for the local model and the budget would never
+        # bite - which is the whole point of the lab. Tighten them to match.
+        "planner": Budget(max_turns=1, max_tokens_out=250 if USING_GROQ else 500),
+        "implementer": Budget(max_turns=3, max_tokens_out=1000 if USING_GROQ else 2000),
+        "reviewer": Budget(max_turns=5, max_tokens_out=1000 if USING_GROQ else 2000),
     }
 
     supervisor = Supervisor(planner, implementer, reviewer, budgets)

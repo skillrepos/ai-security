@@ -7,6 +7,12 @@ from fastmcp import Client
 
 AUTH_SERVER   = "http://127.0.0.1:9000/token"
 MCP_ENDPOINT  = "http://127.0.0.1:8000/mcp/"
+# Raw JSON-RPC posts go to the un-slashed path: Starlette 307-redirects
+# /mcp/ -> /mcp, and httpx does not follow redirects by default.
+RAW_ENDPOINT  = "http://127.0.0.1:8000/mcp"
+# Streamable HTTP requires the client to accept both content types.
+RAW_HEADERS   = {"Content-Type": "application/json",
+                 "Accept": "application/json, text/event-stream"}
 CALL_TIMEOUT  = 5.0  # Timeout for tool calls (FastMCP client can hang)
 
 

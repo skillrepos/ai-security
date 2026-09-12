@@ -6,7 +6,8 @@ import warnings
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError as JWTError
 
 from fastmcp import FastMCP
 import uvicorn
