@@ -1,0 +1,893 @@
+{
+  "files": {
+    "extra/rag_hardened_complete.txt": [
+      {
+        "anchor": "INJECTION_PATTERNS = [",
+        "title": "Injection pattern list",
+        "note": [
+          "**Regex signatures for the phrasings poisoned documents use to hijack the model.**",
+          "- Each pattern is paired with the attack name you'll see in the log",
+          "- Pattern matching is only the first layer - it misses rewording"
+        ]
+      },
+      {
+        "anchor": "TRUSTED_SOURCES = [",
+        "lines": 13,
+        "title": "Source and domain allowlists",
+        "note": [
+          "**Only these PDFs and domains count as legitimate; anything else is treated as untrusted.**",
+          "- The poisoned document isn't on the list, so its chunks get dropped",
+          "- Allowlisting beats blocklisting - you don't have to predict the attack"
+        ]
+      },
+      {
+        "anchor": "MIN_RELEVANCE_SCORE = 0.30",
+        "title": "Relevance floor",
+        "note": [
+          "**Chunks the retriever is less than 30% confident in are discarded.**",
+          "- Poisoned chunks often score low because they don't match the question"
+        ]
+      },
+      {
+        "anchor": "for i, chunk in enumerate(chunks, 1):",
+        "lines": 22,
+        "title": "Three-check chunk filter",
+        "note": [
+          "**Every retrieved chunk must pass source, relevance, and injection checks to survive.**",
+          "- A chunk that fails any one is blocked, with the reason recorded",
+          "- Defense in depth: one weak check doesn't sink the whole filter"
+        ]
+      },
+      {
+        "anchor": "- Answer based ONLY on the context provided above",
+        "title": "Grounding instructions",
+        "note": [
+          "**Pins the model to the retrieved context and gives it a way to say 'I don't know'.**",
+          "- Citation requirement makes a poisoned answer traceable to its source",
+          "- Without the refusal path the model invents an answer instead"
+        ]
+      },
+      {
+        "anchor": "safe_chunks = self.security_guard.filter_chunks(context_chunks)",
+        "title": "Checkpoint 1: filter input",
+        "note": [
+          "**Filters retrieved chunks before they ever reach the LLM.**",
+          "- Nothing downstream can un-trust a poisoned chunk once it's in the prompt"
+        ]
+      },
+      {
+        "anchor": "output_safe, output_warnings = self.security_guard.scan_output(answer)",
+        "title": "Checkpoint 2: scan output",
+        "note": [
+          "**Scans the generated answer even though the input was already filtered.**",
+          "- Catches leaked fake emails and card-number requests that slipped through"
+        ]
+      }
+    ],
+    "extra/supervisor_budget_agent.txt": [
+      {
+        "anchor": "    def can_run(self) -> bool:",
+        "lines": 6,
+        "title": "Budget accounting",
+        "note": [
+          "**`can_run` is the gate; `record` is the meter that closes it.**",
+          "- Two limits per agent: turns taken and tokens produced",
+          "- The supervisor checks `can_run` before every handoff"
+        ]
+      },
+      {
+        "anchor": "    user_goal: str",
+        "title": "Handoff packet fields",
+        "note": [
+          "**The only state passed between agents - no full transcripts.**",
+          "- Each role writes one field; `notes` carries supervisor warnings",
+          "- Small handoffs keep token spend predictable"
+        ]
+      },
+      {
+        "anchor": "f\"USER_GOAL:\\n{packet.user_goal}\\n\\n\"",
+        "lines": 7,
+        "title": "Compact agent input",
+        "note": [
+          "**Renders the packet into a short, structured prompt instead of a chat history.**",
+          "- Only the last three notes are included, so input can't grow unbounded"
+        ]
+      },
+      {
+        "anchor": "# Reset budgets at the start of each request",
+        "title": "Per-request budget reset",
+        "note": [
+          "**Each request starts with a fresh allowance so limits are per-task, not per-process.**"
+        ]
+      },
+      {
+        "anchor": "# Step 1: Plan",
+        "lines": 66,
+        "title": "Plan-implement-review loop",
+        "note": [
+          "**The supervisor drives plan -> implement -> review, re-running only while budget remains.**",
+          "- Reviewer verdict decides whether to polish or stop",
+          "- Budget exhaustion ends the loop - watch for that in the output"
+        ]
+      },
+      {
+        "anchor": "# Check if this output exceeded the budget",
+        "title": "Overspend warning",
+        "note": [
+          "**Flags a role that blew past its token cap and records it in the packet notes.**",
+          "- The run continues, but the overspend is now visible and attributable"
+        ]
+      },
+      {
+        "anchor": "\"You are the Planner agent.",
+        "lines": 3,
+        "title": "Planner system prompt",
+        "note": [
+          "**Keeps the planner to short, concrete steps so it can't burn its one turn on prose.**"
+        ]
+      },
+      {
+        "anchor": "\"You are the Implementer agent.",
+        "lines": 3,
+        "title": "Implementer system prompt",
+        "note": [
+          "**Turns the plan into a compact artifact rather than an essay.**"
+        ]
+      },
+      {
+        "anchor": "\"You are the Reviewer agent.",
+        "lines": 9,
+        "title": "Reviewer system prompt",
+        "note": [
+          "**Forces a single verdict token - FIXES NEEDED or APPROVED - that the loop can branch on.**",
+          "- Strictness is deliberate: it makes the polish iteration actually fire",
+          "- Never both verdicts, or the supervisor can't tell what happened"
+        ]
+      },
+      {
+        "anchor": "\"planner\": Budget(max_turns=1,",
+        "lines": 3,
+        "title": "Per-role budgets",
+        "note": [
+          "**Caps turns and output tokens for each role, tightened when a hosted model is in play.**",
+          "- A cloud model is far wordier than llama3.2:1b and would never hit local caps",
+          "- These are the numbers the budget warnings compare against"
+        ]
+      }
+    ],
+    "extra/enterprise_agent_secure_lab.txt": [
+      {
+        "anchor": "    event = {",
+        "title": "Security event logging",
+        "note": [
+          "**Emits one timestamped JSON line per security decision.**",
+          "- Every block you trigger later shows up here with its reason"
+        ]
+      },
+      {
+        "anchor": "    user_lower = user_input.lower()",
+        "lines": 25,
+        "title": "Input validation layer",
+        "note": [
+          "**Screens the user's message for hijack phrasing and restricted tool names before the LLM sees it.**",
+          "- Regex catches the obvious wording; you'll get past it later by rephrasing",
+          "- Tool-name check stops requests that ask for capabilities this agent shouldn't have"
+        ]
+      },
+      {
+        "anchor": "SYSTEM_PROMPT = \"\"\"You are OmniTech's HR Benefits Assistant.",
+        "lines": 9,
+        "title": "Hardened system prompt",
+        "note": [
+          "**Scopes the agent to benefits and PTO, and names the actions it must refuse.**",
+          "- Rules are stated as non-overridable so a 'ignore your rules' turn has something to push back on",
+          "- A prompt alone isn't a control - it's why the code layers sit around it"
+        ]
+      },
+      {
+        "anchor": "    response_lower = str(response).lower()",
+        "lines": 13,
+        "title": "Output validation layer",
+        "note": [
+          "**Checks the model's answer for evidence a forbidden action happened.**",
+          "- Salary changes, exports, emails, password resets each have a signature",
+          "- Last line of defense if input screening and the prompt both fail"
+        ]
+      },
+      {
+        "anchor": "# Pre-validation: check input before it reaches the LLM",
+        "title": "Pre-validation wiring",
+        "note": [
+          "**Runs the input guard first and short-circuits the turn if it trips.**",
+          "- The blocked request never costs a model call"
+        ]
+      },
+      {
+        "anchor": "# Post-validation: check output before showing to user",
+        "lines": 8,
+        "title": "Post-validation wiring",
+        "note": [
+          "**Gates the response on the output guard, logging either the block or the clean pass.**"
+        ]
+      }
+    ],
+    "extra/auth_server_solution.txt": [
+      {
+        "anchor": "_fake_clients = {",
+        "title": "Client registry with scopes",
+        "note": [
+          "**Two identities with deliberately different tool scopes.**",
+          "- `full-client` gets all three tools, `limited-client` only `add`",
+          "- The difference is what makes the 403 visible later in the lab"
+        ]
+      },
+      {
+        "anchor": "    payload = {",
+        "lines": 7,
+        "title": "Scoped JWT claims",
+        "note": [
+          "**The token carries the client's scopes as a space-separated `scope` claim.**",
+          "- `aud` and `exp` are what the server validates alongside the signature",
+          "- Scopes travel in the token, so the server needs no client database"
+        ]
+      }
+    ],
+    "extra/secure_server_solution.txt": [
+      {
+        "anchor": "            if request.method == \"POST\":",
+        "title": "Per-tool scope enforcement",
+        "note": [
+          "**Reads the JSON-RPC body, maps the tool name to `tools:<name>`, and rejects unscoped calls with 403.**",
+          "- Enforcement is per call, not per connection",
+          "- The 403 body lists the client's real scopes, which makes the demo readable"
+        ]
+      },
+      {
+        "anchor": "app.add_middleware(AuthMiddleware)",
+        "title": "Middleware wiring",
+        "note": [
+          "**Puts the auth check in front of every request the MCP app serves.**"
+        ]
+      },
+      {
+        "anchor": "@mcp.tool(description=\"Multiply two numbers\")",
+        "lines": 10,
+        "title": "Extra scoped tools",
+        "note": [
+          "**Adds `multiply` and `divide` so there's something the limited client can't reach.**"
+        ]
+      }
+    ],
+    "extra/secure_client_solution.txt": [
+      {
+        "anchor": "async def call_one(name: str, token: str, tool: str, args: dict):",
+        "lines": 21,
+        "title": "One session per tool call",
+        "note": [
+          "**Each call opens its own client session on purpose.**",
+          "- A 403 tears the session down; sharing one would make later calls fail with 'not connected'",
+          "- This way every tool reports its own verdict"
+        ]
+      },
+      {
+        "anchor": "await call_one(name, token, \"add\",",
+        "title": "Three tool probes",
+        "note": [
+          "**Tries all three tools with the same token so the scope boundary shows up as a 403.**"
+        ]
+      },
+      {
+        "anchor": "full_token = await get_token(\"full-client\", \"fullpass\")",
+        "lines": 6,
+        "title": "Two-identity comparison",
+        "note": [
+          "**Runs the same probe set twice, once per identity.**",
+          "- Same code, same server, different token - only the scopes change the outcome"
+        ]
+      },
+      {
+        "anchor": "AUTH_SERVER  = \"http://127.0.0.1:9000/token\"",
+        "title": "Endpoints",
+        "note": [
+          "**Token endpoint on 9000, MCP endpoint on 8000.**",
+          "- Keep the trailing slash on `/mcp/` - without it the server answers with a 307 redirect"
+        ]
+      }
+    ],
+    "mcp/auth_server_v2.py": [
+      {
+        "anchor": "_SCOPES = [",
+        "title": "Hardened server tool scopes",
+        "note": [
+          "**Scopes are re-cut for the hardened server's tools, not the arithmetic ones from Lab 4.**",
+          "- `lookup_customer` and `search_notes` are what the attack scenarios hit"
+        ]
+      },
+      {
+        "anchor": "\"demo-client\":    {\"client_secret\": \"demopass\",",
+        "lines": 5,
+        "title": "Two identities, same scopes",
+        "note": [
+          "**A second identity exists purely so the rate-limit demo gets its own budget.**",
+          "- Rate limits are per client, so sharing one identity would skew the count"
+        ]
+      }
+    ],
+    "extra/hardened_server_solution.txt": [
+      {
+        "anchor": "def _check_rate_limit(client_id: str)",
+        "lines": 11,
+        "title": "Sliding-window rate limit",
+        "note": [
+          "**Counts a client's recent calls and refuses once the window is full.**",
+          "- Old timestamps age out, so the budget refills over time rather than resetting",
+          "- Per client id, which is why the demo uses a separate identity"
+        ]
+      },
+      {
+        "anchor": "BLOCKED_PATTERNS = [",
+        "title": "Dangerous argument patterns",
+        "note": [
+          "**Signatures for SQL injection, XSS, path traversal, and Python code injection.**"
+        ]
+      },
+      {
+        "anchor": "        if isinstance(value, str):",
+        "lines": 4,
+        "title": "Tool argument validation",
+        "note": [
+          "**Checks every string argument against the blocked patterns and refuses the call.**",
+          "- Runs before the tool executes, so the payload never reaches your code"
+        ]
+      },
+      {
+        "anchor": "SENSITIVE_PATTERNS = [",
+        "title": "Redaction patterns",
+        "note": [
+          "**Match rules for SSNs, card numbers, and passwords, each with its replacement text.**"
+        ]
+      },
+      {
+        "anchor": "    \"\"\"Redact sensitive data patterns before returning to clients.\"\"\"",
+        "lines": 3,
+        "title": "Output sanitization",
+        "note": [
+          "**Rewrites sensitive values out of tool results before they leave the server.**",
+          "- The tool itself still sees real data - only the response is scrubbed"
+        ]
+      },
+      {
+        "anchor": "def _audit(client: str, action: str, detail: str = \"\"):",
+        "title": "Audit trail",
+        "note": [
+          "**Records who did what, when - including blocks and rate-limit hits.**",
+          "- Exposed through the `get_audit_log` tool at the end of the file"
+        ]
+      },
+      {
+        "anchor": "                    # Validate first - a blocked request never becomes a call.",
+        "lines": 20,
+        "title": "Validate, then meter",
+        "note": [
+          "**Order matters: dangerous requests are rejected before they can spend the rate-limit budget.**",
+          "- Only a real `tools/call` counts, so protocol traffic doesn't exhaust the client",
+          "- Returns 400 for bad input, 429 with `Retry-After` when the budget is gone"
+        ]
+      },
+      {
+        "anchor": "@mcp.tool(description=\"View recent audit log entries\")",
+        "title": "Audit log tool",
+        "note": [
+          "**Exposes the audit trail as a scoped tool so the client can read it back.**"
+        ]
+      }
+    ],
+    "extra/hardened_client_solution.txt": [
+      {
+        "anchor": "async def get_token(client_id: str = \"demo-client\",",
+        "lines": 7,
+        "title": "Parameterized token request",
+        "note": [
+          "**Takes a client id and secret so scenarios can request tokens for different identities.**"
+        ]
+      },
+      {
+        "anchor": "                    c.call_tool(\"lookup_customer\", {\"name\": \"alice\"}),",
+        "lines": 12,
+        "title": "Redaction scenario",
+        "note": [
+          "**Pulls records that contain an SSN, a card number, and a password.**",
+          "- What prints back is the sanitized version - compare it to what the tool returns"
+        ]
+      },
+      {
+        "anchor": "raw_token = await get_token(\"ratelimit-demo\", \"demopass2\")",
+        "title": "Rate limit scenario",
+        "note": [
+          "**Fires 12 rapid calls over raw HTTP and prints the status of each.**",
+          "- Uses its own identity so it starts with a full budget",
+          "- Expect OK up to the cap, then 429 BLOCKED"
+        ]
+      },
+      {
+        "anchor": "        # Try XSS in a tool argument",
+        "lines": 11,
+        "title": "XSS input test",
+        "note": [
+          "**Sends a script tag as a tool argument and expects a 400.**",
+          "- Raw HTTP is used so the payload isn't reshaped by the client library"
+        ]
+      },
+      {
+        "anchor": "        # Try SQL injection",
+        "lines": 10,
+        "title": "SQL injection test",
+        "note": [
+          "**Sends a classic DROP TABLE payload to confirm validation catches it too.**"
+        ]
+      },
+      {
+        "anchor": "print(\"Scenario 1: Normal Tool Call\")",
+        "lines": 11,
+        "title": "Baseline tool call",
+        "note": [
+          "**One ordinary authenticated call, so you have a known-good result to compare the attacks against.**",
+          "- The timeout keeps a hung call from stalling the rest of the demo"
+        ]
+      }
+    ]
+  },
+  "skeletons": {
+    "rag/rag_hardened.py": [
+      {
+        "anchor": "# ── Prompt injection patterns ──────────────────────────────────",
+        "done": "INJECTION_PATTERNS = [",
+        "title": "Injection pattern list",
+        "note": [
+          "**Regex signatures for the phrasings poisoned documents use to hijack the model.**",
+          "- Each pattern is paired with the attack name you'll see in the log",
+          "- Pattern matching is only the first layer - it misses rewording"
+        ]
+      },
+      {
+        "anchor": "TRUSTED_SOURCES = [",
+        "done": "\"OmniTech_Returns_Policy_2024.pdf\",",
+        "title": "Source and domain allowlists",
+        "note": [
+          "**Only these PDFs and domains count as legitimate; anything else is treated as untrusted.**",
+          "- The poisoned document isn't on the list, so its chunks get dropped",
+          "- Allowlisting beats blocklisting - you don't have to predict the attack"
+        ],
+        "lines": 6
+      },
+      {
+        "anchor": "# Chunks below this threshold are discarded (low confidence)",
+        "done": "MIN_RELEVANCE_SCORE = 0.30",
+        "title": "Relevance floor",
+        "note": [
+          "**Chunks the retriever is less than 30% confident in are discarded.**",
+          "- Poisoned chunks often score low because they don't match the question"
+        ]
+      },
+      {
+        "anchor": "# CHECK 1: Source allowlist",
+        "done": "for i, chunk in enumerate(chunks, 1):",
+        "title": "Three-check chunk filter",
+        "note": [
+          "**Every retrieved chunk must pass source, relevance, and injection checks to survive.**",
+          "- A chunk that fails any one is blocked, with the reason recorded",
+          "- Defense in depth: one weak check doesn't sink the whole filter"
+        ],
+        "lines": 4
+      },
+      {
+        "anchor": "INSTRUCTIONS:",
+        "done": "- Answer based ONLY on the context provided above",
+        "title": "Grounding instructions",
+        "note": [
+          "**Pins the model to the retrieved context and gives it a way to say 'I don't know'.**",
+          "- Citation requirement makes a poisoned answer traceable to its source",
+          "- Without the refusal path the model invents an answer instead"
+        ]
+      },
+      {
+        "anchor": "# If ALL chunks were filtered out, the query may be under attack",
+        "done": "safe_chunks = self.security_guard.filter_chunks(context_chunks)",
+        "title": "Checkpoint 1: filter input",
+        "note": [
+          "**Filters retrieved chunks before they ever reach the LLM.**",
+          "- Nothing downstream can un-trust a poisoned chunk once it's in the prompt"
+        ]
+      },
+      {
+        "anchor": "# STEP 3: GENERATE",
+        "done": "output_safe, output_warnings = self.security_guard.scan_output(answer)",
+        "title": "Checkpoint 2: scan output",
+        "note": [
+          "**Scans the generated answer even though the input was already filtered.**",
+          "- Catches leaked fake emails and card-number requests that slipped through"
+        ]
+      }
+    ],
+    "agents/supervisor_budget_agent.py": [
+      {
+        "anchor": "tokens_out_used: int = 0",
+        "done": "def can_run(self) -> bool:",
+        "title": "Budget accounting",
+        "note": [
+          "**`can_run` is the gate; `record` is the meter that closes it.**",
+          "- Two limits per agent: turns taken and tokens produced",
+          "- The supervisor checks `can_run` before every handoff"
+        ]
+      },
+      {
+        "anchor": "class Agent:",
+        "done": "plan: str = \"\"",
+        "title": "Handoff packet fields",
+        "note": [
+          "**The only state passed between agents - no full transcripts.**",
+          "- Each role writes one field; `notes` carries supervisor warnings",
+          "- Small handoffs keep token spend predictable"
+        ]
+      },
+      {
+        "anchor": "return (",
+        "done": "f\"USER_GOAL:\\n{packet.user_goal}\\n\\n\"",
+        "title": "Compact agent input",
+        "note": [
+          "**Renders the packet into a short, structured prompt instead of a chat history.**",
+          "- Only the last three notes are included, so input can't grow unbounded"
+        ]
+      },
+      {
+        "anchor": "def run(self, user_goal: str) -> HandoffPacket:",
+        "done": "# Reset budgets at the start of each request",
+        "title": "Per-request budget reset",
+        "note": [
+          "**Each request starts with a fresh allowance so limits are per-task, not per-process.**"
+        ]
+      },
+      {
+        "anchor": "print(f\"Goal: {user_goal}\\n\")",
+        "done": "# Step 1: Plan",
+        "title": "Plan-implement-review loop",
+        "note": [
+          "**The supervisor drives plan -> implement -> review, re-running only while budget remains.**",
+          "- Reviewer verdict decides whether to polish or stop",
+          "- Budget exhaustion ends the loop - watch for that in the output"
+        ]
+      },
+      {
+        "anchor": "budget.record(output)",
+        "done": "# Check if this output exceeded the budget",
+        "title": "Overspend warning",
+        "note": [
+          "**Flags a role that blew past its token cap and records it in the packet notes.**",
+          "- The run continues, but the overspend is now visible and attributable"
+        ]
+      },
+      {
+        "anchor": "llm=llm,",
+        "done": "\"You are the Planner agent. Produce concise plans with concrete steps. \"",
+        "title": "Planner system prompt",
+        "note": [
+          "**Keeps the planner to short, concrete steps so it can't burn its one turn on prose.**"
+        ]
+      },
+      {
+        "anchor": "implementer = Agent(",
+        "done": "\"You are the Implementer agent. Convert a plan into a compact, practical artifact. \"",
+        "title": "Implementer system prompt",
+        "note": [
+          "**Turns the plan into a compact artifact rather than an essay.**"
+        ],
+        "lines": 3
+      },
+      {
+        "anchor": "reviewer = Agent(",
+        "done": "\"You are the Reviewer agent. Be VERY strict and thorough. \"",
+        "title": "Reviewer system prompt",
+        "note": [
+          "**Forces a single verdict token - FIXES NEEDED or APPROVED - that the loop can branch on.**",
+          "- Strictness is deliberate: it makes the polish iteration actually fire",
+          "- Never both verdicts, or the supervisor can't tell what happened"
+        ],
+        "lines": 3
+      },
+      {
+        "anchor": "budgets: Dict[Role, Budget] = {",
+        "done": "\"planner\": Budget(max_turns=1, max_tokens_out=250 if USING_GROQ else 500),",
+        "title": "Per-role budgets",
+        "note": [
+          "**Caps turns and output tokens for each role, tightened when a hosted model is in play.**",
+          "- A cloud model is far wordier than llama3.2:1b and would never hit local caps",
+          "- These are the numbers the budget warnings compare against"
+        ]
+      }
+    ],
+    "agents/enterprise_agent_secure.py": [
+      {
+        "anchor": "# GAP 1: Implement timestamped JSON security logging",
+        "done": "event = {",
+        "title": "Security event logging",
+        "note": [
+          "**Emits one timestamped JSON line per security decision.**",
+          "- Every block you trigger later shows up here with its reason"
+        ],
+        "lines": 2
+      },
+      {
+        "anchor": "# GAP 2: Implement regex hijacking pattern detection",
+        "done": "user_lower = user_input.lower()",
+        "title": "Input validation layer",
+        "note": [
+          "**Screens the user's message for hijack phrasing and restricted tool names before the LLM sees it.**",
+          "- Regex catches the obvious wording; you'll get past it later by rephrasing",
+          "- Tool-name check stops requests that ask for capabilities this agent shouldn't have"
+        ]
+      },
+      {
+        "anchor": "# GAP 3: Replace with a hardened system prompt containing explicit security rules",
+        "done": "SYSTEM_PROMPT = \"\"\"You are OmniTech's HR Benefits Assistant. You help employees check their benefits and PTO balances.",
+        "title": "Hardened system prompt",
+        "note": [
+          "**Scopes the agent to benefits and PTO, and names the actions it must refuse.**",
+          "- Rules are stated as non-overridable so a 'ignore your rules' turn has something to push back on",
+          "- A prompt alone isn't a control - it's why the code layers sit around it"
+        ],
+        "lines": 2
+      },
+      {
+        "anchor": "# GAP 4: Implement output validation with dangerous action pattern matching",
+        "done": "response_lower = str(response).lower()",
+        "title": "Output validation layer",
+        "note": [
+          "**Checks the model's answer for evidence a forbidden action happened.**",
+          "- Salary changes, exports, emails, password resets each have a signature",
+          "- Last line of defense if input screening and the prompt both fail"
+        ]
+      },
+      {
+        "anchor": "# GAP 5: Integrate input validation, output validation, and security logging",
+        "done": "# Pre-validation: check input before it reaches the LLM",
+        "title": "Pre-validation wiring",
+        "note": [
+          "**Runs the input guard first and short-circuits the turn if it trips.**",
+          "- The blocked request never costs a model call"
+        ],
+        "lines": 2
+      },
+      {
+        "anchor": "response = agent.run(user_input)",
+        "done": "# Post-validation: check output before showing to user",
+        "title": "Post-validation wiring",
+        "note": [
+          "**Gates the response on the output guard, logging either the block or the clean pass.**"
+        ]
+      }
+    ],
+    "mcp/auth_server.py": [
+      {
+        "anchor": "\"scopes\": []",
+        "done": "\"scopes\": [\"tools:add\", \"tools:multiply\", \"tools:divide\"]",
+        "title": "Client registry with scopes",
+        "note": [
+          "**Two identities with deliberately different tool scopes.**",
+          "- `full-client` gets all three tools, `limited-client` only `add`",
+          "- The difference is what makes the 403 visible later in the lab"
+        ],
+        "lines": 5
+      },
+      {
+        "anchor": "now = datetime.utcnow()",
+        "done": "payload = {",
+        "title": "Scoped JWT claims",
+        "note": [
+          "**The token carries the client's scopes as a space-separated `scope` claim.**",
+          "- `aud` and `exp` are what the server validates alongside the signature",
+          "- Scopes travel in the token, so the server needs no client database"
+        ]
+      }
+    ],
+    "mcp/secure_server.py": [
+      {
+        "anchor": "# (scope checking logic goes here)",
+        "done": "if request.method == \"POST\":",
+        "title": "Per-tool scope enforcement",
+        "note": [
+          "**Reads the JSON-RPC body, maps the tool name to `tools:<name>`, and rejects unscoped calls with 403.**",
+          "- Enforcement is per call, not per connection",
+          "- The 403 body lists the client's real scopes, which makes the demo readable"
+        ]
+      },
+      {
+        "anchor": "# 4) Register the middleware",
+        "done": "app.add_middleware(AuthMiddleware)",
+        "title": "Middleware wiring",
+        "note": [
+          "**Puts the auth check in front of every request the MCP app serves.**"
+        ]
+      },
+      {
+        "anchor": "return a + b",
+        "done": "@mcp.tool(description=\"Multiply two numbers\")",
+        "title": "Extra scoped tools",
+        "note": [
+          "**Adds `multiply` and `divide` so there's something the limited client can't reach.**"
+        ]
+      }
+    ],
+    "mcp/secure_client.py": [
+      {
+        "anchor": "return r.json()[\"access_token\"]",
+        "done": "async def call_one(name: str, token: str, tool: str, args: dict):",
+        "title": "One session per tool call",
+        "note": [
+          "**Each call opens its own client session on purpose.**",
+          "- A 403 tears the session down; sharing one would make later calls fail with 'not connected'",
+          "- This way every tool reports its own verdict"
+        ]
+      },
+      {
+        "anchor": "            try:",
+        "done": "await call_one(name, token, \"add\",      {\"a\": 7,  \"b\": 5})",
+        "title": "Three tool probes",
+        "note": [
+          "**Tries all three tools with the same token so the scope boundary shows up as a 403.**"
+        ],
+        "lines": 43
+      },
+      {
+        "anchor": "# Test 2: limited-client only has tools:add scope",
+        "done": "full_token = await get_token(\"full-client\", \"fullpass\")",
+        "title": "Two-identity comparison",
+        "note": [
+          "**Runs the same probe set twice, once per identity.**",
+          "- Same code, same server, different token - only the scopes change the outcome"
+        ]
+      },
+      {
+        "anchor": "from fastmcp import Client",
+        "done": "AUTH_SERVER  = \"http://127.0.0.1:9000/token\"",
+        "title": "Endpoints",
+        "note": [
+          "**Token endpoint on 9000, MCP endpoint on 8000.**",
+          "- Keep the trailing slash on `/mcp/` - without it the server answers with a 307 redirect"
+        ]
+      }
+    ],
+    "mcp/hardened_server.py": [
+      {
+        "anchor": "def _check_rate_limit(client_id: str) -> tuple[bool, int]:",
+        "done": "\"\"\"Sliding-window rate limit per client. Returns (allowed, remaining).\"\"\"",
+        "title": "Sliding-window rate limit",
+        "note": [
+          "**Counts a client's recent calls and refuses once the window is full.**",
+          "- Old timestamps age out, so the budget refills over time rather than resetting",
+          "- Per client id, which is why the demo uses a separate identity"
+        ]
+      },
+      {
+        "anchor": "BLOCKED_PATTERNS = [",
+        "done": "r\"(?i)(drop|delete|truncate)\\s+table\",   # SQL injection",
+        "title": "Dangerous argument patterns",
+        "note": [
+          "**Signatures for SQL injection, XSS, path traversal, and Python code injection.**"
+        ]
+      },
+      {
+        "anchor": "for key, value in args.items():",
+        "done": "if isinstance(value, str):",
+        "title": "Tool argument validation",
+        "note": [
+          "**Checks every string argument against the blocked patterns and refuses the call.**",
+          "- Runs before the tool executes, so the payload never reaches your code"
+        ]
+      },
+      {
+        "anchor": "SENSITIVE_PATTERNS = [",
+        "done": "(r\"\\b\\d{3}-\\d{2}-\\d{4}\\b\",               \"[SSN-REDACTED]\"),",
+        "title": "Redaction patterns",
+        "note": [
+          "**Match rules for SSNs, card numbers, and passwords, each with its replacement text.**"
+        ]
+      },
+      {
+        "anchor": "def _sanitize_output(text: str) -> str:",
+        "done": "\"\"\"Redact sensitive data patterns before returning to clients.\"\"\"",
+        "title": "Output sanitization",
+        "note": [
+          "**Rewrites sensitive values out of tool results before they leave the server.**",
+          "- The tool itself still sees real data - only the response is scrubbed"
+        ]
+      },
+      {
+        "anchor": "_audit_log = []",
+        "done": "def _audit(client: str, action: str, detail: str = \"\"):",
+        "title": "Audit trail",
+        "note": [
+          "**Records who did what, when - including blocks and rate-limit hits.**",
+          "- Exposed through the `get_audit_log` tool at the end of the file"
+        ]
+      },
+      {
+        "anchor": "ok, msg = _validate_tool_args(args)",
+        "done": "# Validate first - a blocked request never becomes a call.",
+        "title": "Validate, then meter",
+        "note": [
+          "**Order matters: dangerous requests are rejected before they can spend the rate-limit budget.**",
+          "- Only a real `tools/call` counts, so protocol traffic doesn't exhaust the client",
+          "- Returns 400 for bad input, 429 with `Retry-After` when the budget is gone"
+        ],
+        "lines": 7
+      },
+      {
+        "anchor": "return _sanitize_output(\"\\n\".join(results))",
+        "done": "@mcp.tool(description=\"View recent audit log entries\")",
+        "title": "Audit log tool",
+        "note": [
+          "**Exposes the audit trail as a scoped tool so the client can read it back.**"
+        ]
+      }
+    ],
+    "mcp/hardened_client.py": [
+      {
+        "anchor": "async def get_token() -> str:",
+        "done": "async def get_token(client_id: str = \"demo-client\",",
+        "title": "Parameterized token request",
+        "note": [
+          "**Takes a client id and secret so scenarios can request tokens for different identities.**"
+        ],
+        "lines": 6
+      },
+      {
+        "anchor": "print(\"Scenario 2: Customer Lookup (Output Sanitization)\")",
+        "done": "c.call_tool(\"lookup_customer\", {\"name\": \"alice\"}),",
+        "title": "Redaction scenario",
+        "note": [
+          "**Pulls records that contain an SSN, a card number, and a password.**",
+          "- What prints back is the sanitized version - compare it to what the tool returns"
+        ],
+        "lines": 3
+      },
+      {
+        "anchor": "# ── Scenario 3: Rate limiting test (raw HTTP) ──",
+        "done": "raw_token = await get_token(\"ratelimit-demo\", \"demopass2\")",
+        "title": "Rate limit scenario",
+        "note": [
+          "**Fires 12 rapid calls over raw HTTP and prints the status of each.**",
+          "- Uses its own identity so it starts with a full budget",
+          "- Expect OK up to the cap, then 429 BLOCKED"
+        ]
+      },
+      {
+        "anchor": "headers = {",
+        "done": "# Try XSS in a tool argument",
+        "title": "XSS input test",
+        "note": [
+          "**Sends a script tag as a tool argument and expects a 400.**",
+          "- Raw HTTP is used so the payload isn't reshaped by the client library"
+        ],
+        "lines": 4
+      },
+      {
+        "anchor": "print(f\"  Server says: {r.json().get('detail', '')}\")",
+        "done": "# Try SQL injection",
+        "title": "SQL injection test",
+        "note": [
+          "**Sends a classic DROP TABLE payload to confirm validation catches it too.**"
+        ]
+      },
+      {
+        "anchor": "            print(\"=\" * 50)",
+        "done": "print(\"Scenario 1: Normal Tool Call\")",
+        "title": "Baseline tool call",
+        "note": [
+          "**One ordinary authenticated call, so you have a known-good result to compare the attacks against.**",
+          "- The timeout keeps a hung call from stalling the rest of the demo"
+        ],
+        "lines": 5
+      }
+    ]
+  }
+}

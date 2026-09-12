@@ -22,6 +22,7 @@
                 "github.copilot.chat.enable": false,
                 "github.copilotChat.showInExplorer": false,
                 "workbench.startupEditor": "readme",
+                "mergeInfo.skeletonHighlights": true,
                 "workbench.editorAssociations": {
                     "*.md": "vscode.markdown.preview.editor"
                 }
@@ -32,5 +33,8 @@
         }
     },
     "postCreateCommand": "bash -i scripts/pysetup.sh py_env && bash -i scripts/startOllama.sh && py_env/bin/python scripts/warmup.py",
-    "postAttachCommand": "bash scripts/post_attach_ollama.sh"
+    "postAttachCommand": {
+        "ollama": "bash scripts/post_attach_ollama.sh",
+        "merge-info": "nohup bash -c 'for i in 1 2 3 4 5 6; do code --install-extension ${containerWorkspaceFolder}/.devcontainer/merge-info-0.2.0.vsix --force && break; sleep 10; done' >/tmp/merge-info-install.log 2>&1 &"
+    }
 }
