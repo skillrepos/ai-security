@@ -19,13 +19,10 @@ Click here ➡️  [![Open in GitHub Codespaces](https://github.com/codespaces/b
 
 This will run for a long time while it gets everything ready.
 
-After the initial startup, it will run a script to setup the python environment and install needed python pieces. This will take several more minutes to run. It will look like this while this is running.
+After the initial startup, it will run a script to setup the python environment and install needed python pieces. This will take several more minutes to run. 
+The codespace is ready to use when you see a screen like the one shown below in its terminal.
 
-![Final prep](./images/prompt-accel3.png?raw=true "Final prep")
-
-The codespace is ready to use when you see a prompt like the one shown below in its terminal.
-
-![Ready to use](./images/prompt-accel4.png?raw=true "Ready to use")
+![Ready to use](./images/ai-sec43.png?raw=true "Ready to use")
 
 
 **4. Open up the *labs.md* file so you can follow along with the labs.**
