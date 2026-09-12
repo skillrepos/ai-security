@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.10 - 09/12/26
+## Revision 1.11 - 09/12/26
 
 
 **Assembling Code**
@@ -13,6 +13,9 @@
 > Most code to be merged will also have informational comments available describing what the code does. You get to these by hovering over the code or content to be merged when you see the yellow comment icon in the left gutter. See figure below for an example.
 >
 > You can also open a starter file on its own, before its merge step. The spots where merged code will land are highlighted in yellow, and hovering one gives you the same explanation.
+> <br><br>
+![skeleton highlights](./images/merge-info4.png?raw=true "skeleton highlights")
+<br><br>
 >
 > When ALL merges are done, you can save your changes and close the view by clicking on the `X` in the tab at the top of the diff.
 > <br><br>
