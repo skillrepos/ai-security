@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.11 - 09/12/26
+## Revision 1.12 - 09/12/26
 
 
 **Assembling Code**
@@ -758,7 +758,7 @@ python hardened_client.py
 
 8. Continue examining the output:
 
-   **Scenario 3 – Rate Limiting**: Twelve rapid requests are sent via raw HTTP under a separate client identity, so the budget is its own. Requests 1-10 return `200 OK`; 11 and 12 return `429 BLOCKED`. The server terminal shows `[AUDIT] RATE_LIMITED` entries.
+   **Scenario 3 – Rate Limiting**: Twelve rapid requests are sent via raw HTTP under a separate client identity, so the budget is its own. Requests 1-10 return `OK`; 11 and 12 return `BLOCKED (429)`. The server terminal shows `[AUDIT] RATE_LIMITED` entries.
 
    **Scenario 4 – Input Validation**: An XSS payload (`<script>alert(1)</script>`) and a SQL injection (`DROP TABLE`) are sent as tool arguments. Both return `400` with "blocked dangerous pattern" messages.
 
