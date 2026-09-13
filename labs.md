@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.12 - 09/12/26
+## Revision 1.13 - 09/13/26
 
 
 **Assembling Code**
@@ -280,11 +280,13 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 
 <br><br>
 
-7. Stop the program by typing *exit*. Now let's decrease the token budgets and see how that affects things. Open up the supervisor_budget_agent.py file, find the *budgets* dictionary (around line 294) and change the max token values to 250, 1000, 1000 as shown below. 
+7. Stop the program by typing *exit*. Now let's decrease the token budgets and see how that affects things. Open up the supervisor_budget_agent.py file and find the *budgets* dictionary (around line 313).
 
 ```
 code supervisor_budget_agent.py
 ```
+
+Notice that each agent's `max_tokens_out` has two values: the first is used when a `GROQ_API_KEY` is set, the second when the lab falls back to the local model. **Cut both values in half** for each agent so the new values are 125/250 for the planner and 500/1000 for the implementer and reviewer, as shown below. (Only the branch matching your setup takes effect, so changing both is safe either way.)
 
 ![modifying budgets](./images/ae143.png?raw=true "modifying budgets") 
 
