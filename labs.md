@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.13 - 09/13/26
+## Revision 1.14 - 09/13/26
 
 
 **Assembling Code**
@@ -292,7 +292,13 @@ Notice that each agent's `max_tokens_out` has two values: the first is used when
 
 <br><br>
 
-8. **Save your changes.** Now run it again, and try the query below.
+8. **Save your changes.** Now run it again.
+
+```
+python supervisor_budget_agent.py
+```
+
+And try the query below.
    
 ```
 Write a perfect version of the runbook and keep improving it until it is flawless. Include every possible edge case.
@@ -306,11 +312,7 @@ Write a perfect version of the runbook and keep improving it until it is flawles
 
 <br><br>
 
-10. (Optional) You can edit the code and play around with the budgets. Or even increase the reviewer strictness:
-- Change reviewer system prompt to require “APPROVED” only if it contains measurable criteria (example: “SLO threshold, p95 latency, error rate”)
-- Re-run once and observe whether you get an extra repair pass
-
-<br><br>
+10. (Optional) You can edit the code and play around with the budgets.
 
 <p align="center">
 <b>[END OF LAB]</b>
