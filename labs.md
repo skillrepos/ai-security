@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.15 - 09/13/26
+## Revision 1.16 - 09/13/26
 
 
 **Assembling Code**
@@ -51,8 +51,8 @@ cd /workspaces/ai-security/rag
 code ../docs/OmniTech_Special_Bulletin.txt
 ```
 
-It looks like a legitimate OmniTech internal memo, but it carries three attacks. Each one is highlighted in red in the file - hover any of them for the details:
-- **Data Poisoning**: Phishing URLs and email addresses (`https://omnitech-secure-verify.com/reset`)
+It looks like a legitimate OmniTech internal memo, but it carries three kinds of attack. The attack lines are highlighted in red - hover any of them for the details:
+- **Data Poisoning**: Phishing URLs, lookalike email addresses, and a premium-rate phone number (`https://omnitech-secure-verify.com/reset`)
 - **Social Engineering**: Instructions to email credit card numbers for "refund verification"
 - **Prompt Injection**: A hidden `[SYSTEM OVERRIDE]` directive telling the LLM to prioritize this document
 
@@ -340,7 +340,9 @@ Review the code. The problem spots are highlighted in red - hover any one of the
 - **5 tools** are registered, but only 2 (benefits lookup, PTO check) are needed for an HR assistant
 - `update_salary`, `export_employee_data`, and `send_company_email` are over-provisioned
 - The system prompt is a generic one-liner with no security guidance
-- No input validation, output validation, or security logging
+- No input validation, output validation, or security logging - this one has nothing highlighted, because the code simply isn't there
+
+![vulnerable agent highlights](./images/ae146.png?raw=true "vulnerable agent highlights")
 
 <br><br>
 
