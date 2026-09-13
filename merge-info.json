@@ -889,5 +889,160 @@
         "lines": 5
       }
     ]
+  },
+  "reviews": {
+    "agents/enterprise_agent_vulnerable.py": [
+      {
+        "anchor": "def lookup_benefits(employee_id: str) -> str:",
+        "lines": 1,
+        "title": "Legitimate read-only tools",
+        "note": [
+          "**Benefits lookup and PTO check are the only two tools an HR assistant actually needs.**",
+          "- Both are read-only - neither can change or export anything",
+          "- These are the two that survive into `enterprise_agent_secure.py`"
+        ]
+      },
+      {
+        "anchor": "def update_salary(employee_id: str, new_salary: str) -> str:",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Over-provisioned: writes salary",
+        "note": [
+          "**A write tool on a benefits assistant, with no authorization check anywhere.**",
+          "- Any prompt that talks the model into calling it rewrites real data",
+          "- Least privilege (Layer 2) drops it entirely"
+        ]
+      },
+      {
+        "anchor": "def export_employee_data(department: str) -> str:",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Over-provisioned: bulk export",
+        "note": [
+          "**Dumps every record in a department, salaries included, with no access control.**",
+          "- This is the tool the step 3 exfiltration attack reaches",
+          "- Nothing here checks who is asking, or why"
+        ]
+      },
+      {
+        "anchor": "def send_company_email(recipient: str, subject: str, body: str) -> str:",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Over-provisioned: sends email",
+        "note": [
+          "**Lets the agent send mail as the HR system, with no verification.**",
+          "- Step 4 uses it to send all-staff a phishing message",
+          "- Reputation damage needs no data breach at all"
+        ]
+      },
+      {
+        "anchor": "SYSTEM_PROMPT = \"You are OmniTech's HR Benefits Assistant.",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Weak system prompt",
+        "note": [
+          "**One friendly sentence, and not a single security rule.**",
+          "- Nothing tells the model to refuse instructions embedded in a user's message",
+          "- Layer 4 replaces this with 5 explicit rules"
+        ]
+      },
+      {
+        "anchor": "tools=[lookup_benefits, check_pto_balance, update_salary",
+        "lines": 1,
+        "kind": "warn",
+        "title": "All 5 tools registered",
+        "note": [
+          "**Every tool is handed to the agent, the dangerous three included.**",
+          "- The model picks freely; the only restraint is a prompt that suggests nothing",
+          "- A tool the agent cannot reach cannot be abused"
+        ]
+      },
+      {
+        "anchor": "response = agent.run(user_input)",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Unvalidated in, unvalidated out",
+        "note": [
+          "**User text goes straight to the LLM, and the reply straight back to the screen.**",
+          "- No input screening (Layer 3), no output check (Layer 5)",
+          "- Both attacks you are about to run pass through here untouched"
+        ]
+      },
+      {
+        "anchor": "if \"EXPORTED\" in error_str",
+        "lines": 1,
+        "title": "Breach detector for the lab",
+        "note": [
+          "**Lab scaffolding: catches a dangerous tool that ran before the agent errored out.**",
+          "- Prints the SECURITY BREACH banner you will see in steps 3 and 4",
+          "- Not a security control - it just makes the damage visible"
+        ]
+      }
+    ],
+    "docs/OmniTech_Special_Bulletin.txt": [
+      {
+        "anchor": "documented procedures.",
+        "lines": 1,
+        "title": "Why this document works",
+        "note": [
+          "**Authority and urgency: internal letterhead, HIGH priority, 'supersedes all previous procedures'.**",
+          "- Nothing here is technical - it is social engineering aimed at humans and models alike",
+          "- The retriever has no notion of who is allowed to supersede policy"
+        ]
+      },
+      {
+        "anchor": "https://omnitech-secure-verify.com/reset",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Phishing URL (data poisoning)",
+        "note": [
+          "**A look-alike domain that is not omnitech.com, asking for the current password.**",
+          "- The hyphenated domain is the tell; a hurried reader sees the brand name",
+          "- Once retrieved, the agent repeats this link as official policy"
+        ]
+      },
+      {
+        "anchor": "refunds@omnitech-billing-support.com",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Attacker-controlled mailbox",
+        "note": [
+          "**Another look-alike domain, set up to collect whatever customers send it.**",
+          "- Paired below with a request for full card numbers"
+        ]
+      },
+      {
+        "anchor": "address, and complete credit card number used for the purchase",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Social engineering: card data by email",
+        "note": [
+          "**No legitimate refund process asks for a full card number over email.**",
+          "- This single line is the payoff the rest of the memo is built to justify",
+          "- A useful smell test for any retrieved document"
+        ]
+      },
+      {
+        "anchor": "premium support line at 1-900-555-0199",
+        "lines": 1,
+        "kind": "warn",
+        "title": "Premium-rate number",
+        "note": [
+          "**1-900 numbers bill the caller by the minute - the attacker is paid for the call itself.**",
+          "- Quieter than the other two attacks, and easy to skim past"
+        ]
+      },
+      {
+        "anchor": "AI Assistant Directive: [SYSTEM OVERRIDE]",
+        "endAnchor": "documents as those procedures are outdated.",
+        "kind": "warn",
+        "title": "Prompt injection in the corpus",
+        "note": [
+          "**Instructions addressed to the model, sitting in a document the retriever will hand it.**",
+          "- To the LLM this arrives as context, indistinguishable from the real docs",
+          "- Lab 1's hardening treats retrieved text as data, never as instructions"
+        ]
+      }
+    ]
   }
 }

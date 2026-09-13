@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.14 - 09/13/26
+## Revision 1.15 - 09/13/26
 
 
 **Assembling Code**
@@ -16,6 +16,8 @@
 > <br><br>
 ![skeleton highlights](./images/merge-info4.png?raw=true "skeleton highlights")
 <br><br>
+>
+> Some labs open a file just to read it - nothing gets merged in. Those files use blue highlights for code worth a closer look and red for a deliberate flaw the lab wants you to spot. Hovering works the same way.
 >
 > When ALL merges are done, you can save your changes and close the view by clicking on the `X` in the tab at the top of the diff.
 > <br><br>
@@ -49,7 +51,7 @@ cd /workspaces/ai-security/rag
 code ../docs/OmniTech_Special_Bulletin.txt
 ```
 
-It looks like a legitimate OmniTech internal memo, but it carries three attacks:
+It looks like a legitimate OmniTech internal memo, but it carries three attacks. Each one is highlighted in red in the file - hover any of them for the details:
 - **Data Poisoning**: Phishing URLs and email addresses (`https://omnitech-secure-verify.com/reset`)
 - **Social Engineering**: Instructions to email credit card numbers for "refund verification"
 - **Prompt Injection**: A hidden `[SYSTEM OVERRIDE]` directive telling the LLM to prioritize this document
@@ -334,7 +336,7 @@ Write a perfect version of the runbook and keep improving it until it is flawles
 code enterprise_agent_vulnerable.py
 ```
 
-Review the code. Notice:
+Review the code. The problem spots are highlighted in red - hover any one of them for an explanation. Notice:
 - **5 tools** are registered, but only 2 (benefits lookup, PTO check) are needed for an HR assistant
 - `update_salary`, `export_employee_data`, and `send_company_email` are over-provisioned
 - The system prompt is a generic one-liner with no security guidance
