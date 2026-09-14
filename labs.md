@@ -1,7 +1,8 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.17 - 09/14/26
+
+## Revision 1.18 - 09/13/26
 
 
 **Assembling Code**
@@ -264,7 +265,7 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 
 <br><br>
 
-5. This will take several minutes to run. Observe the output sequence:
+5. If you're using the GROQ option, this will go fast, otherwise it will take several minutes to run. Observe the output sequence:
 - Supervisor calls **Planner** once
 - Supervisor calls **Implementer** multiple times
 - Supervisor calls **Reviewer** multiple times
@@ -294,7 +295,7 @@ Notice that each agent's `max_tokens_out` has two values: the first is used when
 
 <br><br>
 
-8. **Save your changes.** Now run it again.
+8. **Save your changes (CMD+S or CTRL+S).** Now run it again.
 
 ```
 python supervisor_budget_agent.py
