@@ -30,9 +30,9 @@ You can either open it in a separate browser instance or open it in the codespac
 
 ![Opening labs](./images/ai-security-labs.png?raw=true "Opening labs")
 
-**5. (Optional but recommended) Get a free Groq API key to speed up Labs 2 and 3.**
+**5. (Optional but recommended) Get a free Groq API key to speed up Lab 2.**
 
-Labs 2 and 3 run an agent through several reasoning steps. On the local model that takes a few minutes per run; against a hosted model it takes seconds. The labs teach the same security lessons either way - the controls are the point, not the model - but the faster path is much nicer in a half-day session. Labs 1, 4 and 5 are unaffected.
+Lab 2 runs a multi-agent system through several reasoning steps. On the local model that takes a few minutes per run; against a hosted model it takes seconds. The lab teaches the same security lessons either way - the controls are the point, not the model - but the faster path is much nicer in a half-day session. The other labs always use the local model and are unaffected.
 
 a. In a browser, go to https://console.groq.com and create an account. (If you get an email with a button to confirm, make sure the link opens in the same browser where you were using Groq. If not, copy the link from the "click here" section and paste it into the right browser.)
 
@@ -66,7 +66,7 @@ Afterwards you should see output confirming that `GROQ_API_KEY` is set.
 
 ![Getting API key](./images/aip60.png?raw=true "Getting API key")
 
-If you skip this, everything still works - Labs 2 and 3 fall back to the local Ollama model automatically.
+If you skip this, everything still works - Lab 2 falls back to the local Ollama model automatically.
 
 <br><br>
 

@@ -23,7 +23,10 @@ start_ollama_if_needed() {
   fi
 
   echo "Starting Ollama server..."
-  nohup ollama serve >/tmp/ollama-serve.log 2>&1 &
+  # Keep warmed models resident for the whole session. Ollama's default is 5
+  # minutes, which expires long before the agent labs run and makes their
+  # first call pay a full model reload.
+  OLLAMA_KEEP_ALIVE="${OLLAMA_KEEP_ALIVE:-4h}" nohup ollama serve >/tmp/ollama-serve.log 2>&1 &
 
   for _ in {1..100}; do
     if is_ollama_up; then
