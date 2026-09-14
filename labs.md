@@ -1,7 +1,7 @@
 # AI Security for Developers and Practitioners
 ## Building safe, trustworthy, and resilient AI systems
 ## Session labs
-## Revision 1.16 - 09/13/26
+## Revision 1.17 - 09/14/26
 
 
 **Assembling Code**
@@ -29,7 +29,7 @@
 
 **NOTE: To copy and paste in the codespace, you may need to use keyboard commands - CTRL-C and CTRL-V. Chrome may work best for this.**
 
-**NOTE: Labs 2 and 3 run noticeably faster if you set a `GROQ_API_KEY` (see the README). Without one they fall back to the local model automatically - the security lessons are identical either way.**
+**NOTE: Lab 2 runs noticeably faster if you set a `GROQ_API_KEY` (see the README). Without one it falls back to the local model automatically - the security lessons are identical either way. The other labs always use the local model.**
 
 **Lab 1: RAG Security - Defending Against Document Poisoning**
 

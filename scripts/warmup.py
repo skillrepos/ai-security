@@ -9,22 +9,24 @@ Run from the repo root:
 What it does
 ------------
 1. Checks that the Ollama server is reachable; starts it automatically if not.
-2. Pulls any missing models (qwen2.5:3b for RAG labs, llama3.2:1b for agent labs).
+2. Pulls any missing models (llama3.2:1b for the RAG and supervisor labs,
+   qwen2.5:3b for the enterprise agent labs).
 3. Warms up /api/generate for both models (used by RAG scripts via requests).
 4. Warms up /api/chat for both models (used by mcp_client_agent, etc.).
 5. Warms up langchain-ollama's ChatOllama for both models (used by
    supervisor_budget_agent.py and agent.py).
-6. Warms up smolagents' LiteLLMModel for llama3.2:1b (used by enterprise agents).
+6. Warms up smolagents' LiteLLMModel for both models (the enterprise agents
+   use qwen2.5:3b).
 7. Warms up ChromaDB's default embedding model (all-MiniLM-L6-v2 via onnxruntime)
    so the first RAG query doesn't stall on model download/load.
 8. Reports total elapsed time so you know when it's safe to start labs.
 
 Models warmed up
 ----------------
-- qwen2.5:3b  : RAG labs (rag_vulnerable.py, rag_hardened.py, rag_code.py),
-                  supervisor_budget_agent.py
-- llama3.2:1b  : Agent labs (enterprise_agent_vulnerable.py,
-                  enterprise_agent_secure.py)
+- llama3.2:1b : RAG labs (rag_vulnerable.py, rag_hardened.py, rag_code.py)
+                and supervisor_budget_agent.py
+- qwen2.5:3b  : Enterprise agent labs (enterprise_agent_vulnerable.py,
+                enterprise_agent_secure.py)
 """
 from __future__ import annotations
 
@@ -47,8 +49,8 @@ AUTO_PULL = os.getenv("OLLAMA_WARMUP_AUTO_PULL", "1").lower() not in {"0", "fals
 
 # Models used across the project
 MODELS = [
-    os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),   # RAG + enterprise agent labs
-    "llama3.2:1b",                               # Supervisor budget agent lab
+    os.getenv("OLLAMA_MODEL", "qwen2.5:3b"),   # Enterprise agent labs
+    "llama3.2:1b",                               # RAG labs + supervisor budget agent
 ]
 # Deduplicate in case env var matches one of the above
 MODELS = list(dict.fromkeys(MODELS))
